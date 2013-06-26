@@ -1,0 +1,6 @@
+gst-plugins-barcortp (1.0.0-11) unstable; urgency=low
+
+  * Initial version.
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Wed, 26 Jun 2013 12:11:11 +0200
+
