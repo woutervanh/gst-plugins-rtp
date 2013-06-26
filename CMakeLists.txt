@@ -20,14 +20,6 @@ find_package(PkgConfig REQUIRED)
 
 set(CMAKE_C_FLAGS "-g -Wall")
 
-SET(CMAKE_UNDER_JHBUILD $ENV{UNDER_JHBUILD})
-if(CMAKE_UNDER_JHBUILD)
-  MESSAGE(STATUS "Enabling test (JHBUILD)")
-  pkg_check_modules (GSTCHECK REQUIRED gstreamer-check-1.0)
-  enable_testing()
-  add_subdirectory (tests)
-endif (CMAKE_UNDER_JHBUILD)
-
 #Required packages for main functionality
 pkg_check_modules (GLIB REQUIRED glib-2.0)
 pkg_check_modules (GOBJECT REQUIRED gobject-2.0)
