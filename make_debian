@@ -1,0 +1,75 @@
+PKG_NAME:=gst-plugins-barcortp
+
+ifndef DEB_RESULT_DIR
+DEB_RESULT_DIR:=$(CURDIR)/$(PKG_NAME)_deb_results
+endif
+DEB_BUILD_LOG:=./$(PKG_NAME)_deb_results/$(PKG_NAME)_build.log
+DEB_BUILD_OPS := --debbuildopts "-j"
+
+# Default values for $DIST and $ARCH
+# They are both set to the system values
+ifndef DIST
+  DIST:=`lsb_release --short --codename`
+endif
+ifndef ARCH
+  ARCH:=`dpkg --print-architecture`
+endif
+
+MODULE     = gst-plugins-barcortp
+TARGET     = DIST
+
+PLATFORMBANNER := "Generation of debian package for $(MODULE) (DIST: $(DIST) - ARCH: $(ARCH) on `uname -n`)"
+
+#ifndef UPLOAD_TARGET
+#  UPLOAD_TARGET:=vclub
+#endif
+
+
+################################################################################
+################################################################################
+################################################################################
+
+
+all: package upload
+package: banner setup changelog binpackage
+
+banner:
+	@echo "##################################################################"
+	@echo $(PLATFORMBANNER)
+	@echo "##################################################################"
+
+setup:
+
+changelog:
+	@[ -d debian ] || \
+	 (echo "# Missing debian directory" && exit 1)
+	@read -p "Do you wish to update the changelog (y/(n))?" yn ; \
+	  ([ -z $$yn ]) || \
+	  (([ $$yn = "y" ] || [ $$yn = "Y" ]) && debchange) || \
+	   ([ $$yn = "n" ] || [ $$yn = "N" ]) || \
+	  make -f make_debian changelog 1>/dev/null
+
+binpackage:
+	@[ -d $(DEB_RESULT_DIR) ] ||\
+	mkdir $(DEB_RESULT_DIR) &&\
+	echo "# directory $(DEB_RESULT_DIR) already in place" 
+	@sudo [ -f /root/.pbuilderrc ] || \
+	 (echo "Need config file /root/.pbuilderrc to build the package" && exit 1)
+	@echo "# Creating Debian Binary Package (${ARCH})..." && \
+         sudo ARCH=${ARCH} DIST=${DIST} CONCURRENCY_LEVE=${CONCURRENCY_LEVEL} \
+	   pdebuild $(DEB_BUILD_OPS) --buildresult $(DEB_RESULT_DIR) --logfile $(DEB_BUILD_LOG)
+
+upload: 
+#	dput -c dput.cf $(UPLOAD_TARGET) $(DEB_RESULT_DIR)/*.changes
+
+clean:
+	@[ -d $(DEB_RESULT_DIR) ] &&\
+	 (rm -rf $(DEB_RESULT_DIR) &&\
+	  echo "# removed file $(DEB_RESULT_DIR)")||\
+	  echo "# file $(DEB_RESULT_DIR) already cleaned"
+
+	@rm -f ../$(PKG_NAME)_*.tar.gz ../$(PKG_NAME)_*.dsc ../$(PKG_NAME)_*.changes
+
+mrproper: clean
+
+distclean: mrproper
