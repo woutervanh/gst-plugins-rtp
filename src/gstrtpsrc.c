@@ -250,16 +250,20 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
       "barcortpsrc", 0, "Barco rtp send bin");
 }
 
-void
+GSocket*
 gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 {
-  g_object_get (G_OBJECT (self->rtcp_src), "used-socket", &(self->rtcpfd),
+  GSocket *rtcpfd; 
+
+  g_object_get (G_OBJECT (self->rtcp_src), "used-socket", &rtcpfd,
       NULL);
 
-  if (!G_IS_SOCKET (self->rtcpfd))
+  if (!G_IS_SOCKET (rtcpfd))
     GST_WARNING_OBJECT (self, "No valid socket retrieved from udpsrc");
   else
-    GST_DEBUG_OBJECT (self, "RTP UDP source has sock %p", self->rtcpfd);
+    GST_DEBUG_OBJECT (self, "RTP UDP source has sock %p", rtcpfd);
+
+  return rtcpfd;
 }
 
 static void
@@ -350,6 +354,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
           g_object_set (G_OBJECT (self->rtcp_src),
               "port", self->uri->port + 1, NULL);
         }
+        g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
       }
       break;
     case PROP_ENCODING_NAME:
@@ -714,6 +719,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
     g_return_val_if_fail (rtpsrc->rtcp_src != NULL, FALSE);
     g_return_val_if_fail (rtpsrc->rtcp_sink != NULL, FALSE);
   }
+
   if (rtpsrc->encrypt) {
     rtpsrc->rtpdecrypt = gst_element_factory_make ("rtpdecrypt", NULL);
     g_return_val_if_fail (rtpsrc->rtpdecrypt != NULL, FALSE);
@@ -747,7 +753,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
       g_object_set (G_OBJECT (rtpsrc->rtcp_src),
           "port", rtpsrc->uri->port + 1, NULL);
     }
-    g_object_set (G_OBJECT (rtpsrc->rtcp_src), "reuse", TRUE,
+    g_object_set (G_OBJECT (rtpsrc->rtcp_src),
         "multicast-iface", rtpsrc->multicast_iface, "close-socket", FALSE,
         "buffer-size", rtpsrc->buffer_size, "auto-multicast", TRUE, NULL);
     /* auto-multicast should be set to false as rtcp_src will already
@@ -760,7 +766,9 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
         "force-ipv4", rtpsrc->force_ipv4,
         "buffer-size", rtpsrc->buffer_size,
         "multicast-iface", rtpsrc->multicast_iface,
-        "auto-multicast", FALSE, NULL);
+        "auto-multicast", FALSE, 
+        "closefd", FALSE,
+        NULL);
   }
   g_object_set (G_OBJECT (rtpsrc->rtpbin),
       "do-lost", TRUE, "autoremove", TRUE,
@@ -805,22 +813,27 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
   }
 
   /* Sync elements states to the parent bin */
-  gst_element_sync_state_with_parent (rtpsrc->rtp_src);
+  if(!gst_element_sync_state_with_parent (rtpsrc->rtp_src))
+      GST_ERROR_OBJECT(rtpsrc, "Could not set RTP source to playing");
   if (rtpsrc->encrypt)
     gst_element_sync_state_with_parent (rtpsrc->rtpdecrypt);
   if (rtpsrc->select_pt > -1)
     gst_element_sync_state_with_parent (rtpsrc->rtpptchange);
-  gst_element_sync_state_with_parent (rtpsrc->rtpbin);
+  if(!gst_element_sync_state_with_parent (rtpsrc->rtpbin))
+      GST_ERROR_OBJECT(rtpsrc, "Could not set RTP bin to playing");
 
   if (rtpsrc->enable_rtcp) {
+    GSocket *rtcpfd = NULL;
     /** The order of these lines is really important **/
     /* First we update the state of rtcp_src so that it creates a socket */
-    gst_element_sync_state_with_parent (rtpsrc->rtcp_src);
+    if(!gst_element_sync_state_with_parent (rtpsrc->rtcp_src))
+      GST_ERROR_OBJECT(rtpsrc, "Could not set RTCP source to playing");
     /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
-    gst_rtp_src_retrieve_rtcpsrc_socket (rtpsrc);
-    g_object_set (G_OBJECT (rtpsrc->rtcp_sink), "socket", rtpsrc->rtcpfd, NULL);
+    rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (rtpsrc);
+    g_object_set (G_OBJECT (rtpsrc->rtcp_sink), "socket", rtcpfd, NULL);
     /* And we sync the state of rtcp_sink */
-    gst_element_sync_state_with_parent (rtpsrc->rtcp_sink);
+    if(!gst_element_sync_state_with_parent (rtpsrc->rtcp_sink))
+      GST_ERROR_OBJECT(rtpsrc, "Could not set RTCP sink to playing");
   }
 
   return TRUE;
@@ -864,8 +877,6 @@ gst_rtp_src_finalize (GObject * gobject)
     soup_uri_free (src->uri);
   if (src->encoding_name)
     g_free (src->encoding_name);
-  if (src->rtcpfd)
-    g_socket_close (src->rtcpfd, NULL);
 
   G_OBJECT_CLASS (parent_class)->finalize (gobject);
 }
@@ -887,7 +898,6 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->force_ipv4 = DEFAULT_PROP_FORCE_IPV4;
   self->buffer_size = DEFAULT_BUFFER_SIZE;
   self->latency = DEFAULT_LATENCY_MS;
-  self->rtcpfd = NULL;
   self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
   self->encrypt = DEFAULT_PROP_ENCRYPT;
 

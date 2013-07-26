@@ -23,8 +23,6 @@ struct _GstRtpSrc
 {
   GstBin parent_instance;
 
-  GSocket *rtcpfd;
-
   SoupURI *uri, *rtcp_remote_uri;
   gchar *last_uri;
   gchar *encoding_name;
