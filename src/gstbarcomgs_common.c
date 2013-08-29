@@ -49,7 +49,7 @@ gst_barco_is_ipv4 (SoupURI * uri)
 {
   gboolean res = TRUE;
 
-  if (uri->query) {
+  if (uri && 0 != *(uri->host)) {
     GInetAddress *addr = g_inet_address_new_from_string (uri->host);
     if (g_inet_address_get_family (addr) == G_SOCKET_FAMILY_IPV4) {
       g_print ("IPv4 based on %s\n", uri->host);
@@ -61,4 +61,82 @@ gst_barco_is_ipv4 (SoupURI * uri)
   }
 
   return res;
+}
+
+void
+gst_barco_parse_uri (GObject * obj, SoupURI * uri, GstDebugCategory * cat)
+{
+  if (uri && uri->query) {
+    GHashTable *hash_table = NULL;
+    GList *keys = NULL, *key;
+
+    hash_table = soup_form_decode (uri->query);
+    keys = g_hash_table_get_keys (hash_table);
+
+    for (key = keys; key; key = key->next) {
+      GParamSpec* spec;
+      spec = g_object_class_find_property (
+          G_OBJECT_GET_CLASS (obj), key->data);
+      if (spec) {
+        switch (spec->value_type) {
+          case G_TYPE_BOOLEAN:
+            g_object_set (obj, key->data,
+                gst_barco_query_to_boolean ((gchar *)
+                    g_hash_table_lookup (hash_table, key->data)), NULL);
+            break;
+          case G_TYPE_INT:
+            g_object_set (obj, key->data,
+                (gint) g_ascii_strtoll (
+                    (gchar *) g_hash_table_lookup (hash_table, key->data),
+                    NULL, 0), NULL);
+            break;
+          case G_TYPE_UINT:
+            g_object_set (obj, key->data,
+                (guint) g_ascii_strtoull (
+                    (gchar *) g_hash_table_lookup (hash_table, key->data),
+                    NULL, 0), NULL);
+            break;
+          case G_TYPE_INT64:
+            g_object_set (obj, key->data,
+                g_ascii_strtoll (
+                    (gchar *) g_hash_table_lookup (hash_table, key->data),
+                    NULL, 0), NULL);
+            break;
+          case G_TYPE_UINT64:
+            g_object_set (obj, key->data,
+                g_ascii_strtoull (
+                    (gchar *) g_hash_table_lookup (hash_table, key->data),
+                    NULL, 0), NULL);
+            break;
+          case G_TYPE_STRING:
+            g_object_set (obj, key->data,
+                (gchar *) g_hash_table_lookup (hash_table, key->data), NULL);
+            break;
+          default:
+            /* Not fundamental types or unknown */
+            if (spec->value_type == GST_TYPE_CAPS) {
+              GstCaps *caps = gst_caps_from_string (
+                  (gchar *) g_hash_table_lookup (hash_table, key->data));
+              g_object_set (obj, key->data, caps, NULL);
+              gst_caps_unref (caps);
+            }
+            else {
+              GST_CAT_WARNING_OBJECT (cat, obj,
+                  "Unknown type or not yet supported: %s "
+                  "(Maybe it should be added)",
+                  g_type_name (spec->value_type));
+              continue;
+            }
+            break;
+        }
+        GST_CAT_LOG_OBJECT (cat, obj, "Set property %s: %s", key->data,
+            (gchar *) g_hash_table_lookup (hash_table, key->data));
+      }
+      else
+        GST_CAT_LOG_OBJECT (cat, obj, "Property %s not supported", key->data);
+    }
+
+    g_list_free (keys);
+    g_hash_table_destroy (hash_table);
+  }
 }

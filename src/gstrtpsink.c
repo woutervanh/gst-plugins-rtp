@@ -33,7 +33,7 @@ enum
 #define DEFAULT_PROP_FORCE_IPV4       (FALSE)
 #define LOCAL_ADDRESS_IPV4			      "0.0.0.0" /* "127.0.0.1" */
 #define LOCAL_ADDRESS_IPV6			      "::"      /* "::1" */
-#define DEFAULT_PROP_ENCRYPT          (TRUE)
+#define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("sink",
@@ -279,53 +279,7 @@ gst_rtp_sink_check_uri (GstRtpSink * rtpsink)
     }
     g_object_unref (addr);
 
-    if (rtpsink->uri->query) {
-      GHashTable *hash_table = NULL;
-      GList *keys = NULL, *key;
-
-      hash_table = soup_form_decode (rtpsink->uri->query);
-      keys = g_hash_table_get_keys (hash_table);
-
-      for (key = keys; key; key = key->next) {
-        if (g_strcmp0 ((gchar *) key->data, "ttl") == 0) {
-          g_object_set (G_OBJECT (rtpsink), "ttl",
-              g_ascii_strtoll (
-                  (gchar *) g_hash_table_lookup (hash_table, key->data),
-                  NULL, 0), NULL);
-          GST_DEBUG_OBJECT (rtpsink, "ttl: %d", rtpsink->ttl);
-        } else if (g_strcmp0 ((gchar *) key->data, "ttl-mc") == 0) {
-          g_object_set (G_OBJECT (rtpsink), "ttl-mc",
-              g_ascii_strtoll (
-                  (gchar *) g_hash_table_lookup (hash_table, key->data),
-                  NULL, 0), NULL);
-          GST_DEBUG_OBJECT (rtpsink, "ttl-mc: %d", rtpsink->ttl_mc);
-        } else if (g_strcmp0 ((gchar *) key->data, "src-port") == 0) {
-          g_object_set (G_OBJECT (rtpsink), "src-port",
-              g_ascii_strtoll (
-                  (gchar *) g_hash_table_lookup (hash_table, key->data),
-                  NULL, 0), NULL);
-          GST_DEBUG_OBJECT (rtpsink, "src-port: %d", rtpsink->src_port);
-        } else if (g_strcmp0 ((gchar *) key->data, "force-ipv4") == 0) {
-          g_object_set (G_OBJECT (rtpsink), "force-ipv4",
-              gst_barco_query_to_boolean ((gchar *)
-                  g_hash_table_lookup (hash_table, key->data)), NULL);
-          GST_DEBUG_OBJECT (rtpsink, "force-ipv4: %d", rtpsink->force_ipv4);
-        } else if (g_strcmp0 ((gchar *) key->data, "encrypt") == 0) {
-          g_object_set (G_OBJECT (rtpsink), "encrypt",
-              gst_barco_query_to_boolean ((gchar *)
-                  g_hash_table_lookup (hash_table, key->data)), NULL);
-          GST_DEBUG_OBJECT (rtpsink, "encrypt: %s",
-              rtpsink->encrypt ? "TRUE" : "FALSE");
-        } else if (g_strcmp0 ((gchar *) key->data, "rate") == 0) {
-          g_object_set (G_OBJECT (rtpsink), "rate",
-              g_ascii_strtoull (
-                  (gchar *) g_hash_table_lookup (hash_table, key->data),
-                  NULL, 0), NULL);
-          GST_DEBUG_OBJECT (rtpsink, "rate: %u", rtpsink->key_derivation_rate);
-        }
-      }
-    }
-    GST_DEBUG_OBJECT (rtpsink, "Configuring udp sinks/sources");
+    gst_barco_parse_uri (G_OBJECT (rtpsink), rtpsink->uri, GST_CAT_DEFAULT);
   }
 }
 

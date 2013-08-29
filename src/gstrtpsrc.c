@@ -43,7 +43,7 @@ enum
 #define DEFAULT_SELECT_PT         		(-1)
 #define DEFAULT_PROP_MULTICAST_IFACE 	(NULL)
 #define DEFAULT_PROP_FORCE_IPV4   		(FALSE)
-#define DEFAULT_PROP_ENCRYPT          (TRUE)
+#define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src%d",
@@ -267,64 +267,6 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 }
 
 static void
-gst_rtp_src_check_uri (GstRtpSrc * self)
-{
-  GHashTable *hash_table = NULL;
-  gchar *encoding_name;
-  GList *keys = NULL, *key;
-
-
-  g_return_if_fail (self->uri != NULL);
-
-  GST_DEBUG_OBJECT (self, "rtpsrc check uri");
-  if (self->uri->query) {
-    hash_table = soup_form_decode (self->uri->query);
-    keys = g_hash_table_get_keys (hash_table);
-
-    for (key = keys; key; key = key->next) {
-      if (g_strcmp0 ((gchar *) key->data, "encoding-name") == 0) {
-        GST_DEBUG_OBJECT (self, "found encoding name");
-        encoding_name = (gchar *) g_hash_table_lookup (hash_table, key->data);
-        g_object_set (G_OBJECT (self), "encoding-name", encoding_name, NULL);
-      } else if (g_strcmp0 ((gchar *) key->data, "ignore-pt") == 0) {
-        g_object_set (G_OBJECT (self), "ignore-pt",
-            gst_barco_query_to_boolean ((gchar *)
-                g_hash_table_lookup (hash_table, key->data)), NULL);
-      } else if (g_strcmp0 ((gchar *) key->data, "force-ipv4") == 0) {
-        g_object_set (G_OBJECT (self), "force-ipv4",
-            (gchar *) g_hash_table_lookup (hash_table, key->data), NULL);
-        GST_DEBUG_OBJECT (self, "force-ipv4: %s",
-            (self->force_ipv4) ? "TRUE" : "FALSE");
-      } else if (g_strcmp0 ((gchar *) key->data, "buffer-size") == 0) {
-        g_object_set (G_OBJECT (self), "buffer-size",
-            g_ascii_strtoull (
-                (gchar *) g_hash_table_lookup (hash_table, key->data),
-                NULL, 0), NULL);
-        GST_DEBUG_OBJECT (self, "buffer-size: %u", self->buffer_size);
-      } else if (g_strcmp0 ((gchar *) key->data, "multicast-iface") == 0) {
-        g_object_set (G_OBJECT (self), "multicast-iface",
-            (gchar *) g_hash_table_lookup (hash_table, key->data), NULL);
-        GST_DEBUG_OBJECT (self, "multicast_iface : %s", self->multicast_iface);
-      } else if (g_strcmp0 ((gchar *) key->data, "encrypt") == 0) {
-        g_object_set (G_OBJECT (self), "encrypt",
-            gst_barco_query_to_boolean ((gchar *)
-                g_hash_table_lookup (hash_table, key->data)), NULL);
-        GST_DEBUG_OBJECT (self, "encrypt: %s",
-            self->encrypt ? "TRUE" : "FALSE");
-      } else if (g_strcmp0 ((gchar *) key->data, "rate") == 0) {
-        g_object_set (G_OBJECT (self), "rate",
-            g_ascii_strtoull (
-                (gchar *) g_hash_table_lookup (hash_table, key->data),
-                NULL, 0), NULL);
-        GST_DEBUG_OBJECT (self, "rate: %u", self->key_derivation_rate);
-      }
-    }
-    g_list_free (keys);
-    g_hash_table_destroy (hash_table);
-  }
-}
-
-static void
 gst_rtp_src_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
@@ -337,7 +279,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       if (self->uri)
         soup_uri_free (self->uri);
       self->uri = soup_uri_new (g_value_get_string (value));
-      gst_rtp_src_check_uri (self);
+      gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
       if (self->rtp_src) {
         uri = g_strdup_printf ("udp://%s:%d", self->uri->host, self->uri->port);
         g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
