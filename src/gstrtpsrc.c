@@ -709,7 +709,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
         "buffer-size", rtpsrc->buffer_size,
         "multicast-iface", rtpsrc->multicast_iface,
         "auto-multicast", FALSE, 
-        "closefd", FALSE,
+        "close-socket", FALSE,
         NULL);
   }
   g_object_set (G_OBJECT (rtpsrc->rtpbin),
