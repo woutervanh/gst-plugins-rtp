@@ -77,7 +77,7 @@ const static RtpParameters RTP_DYNAMIC_PARAMETERS[] = {
   {0, "VDVI", "audio", 0},
   {0, "L20", "audio", 0},
   {0, "L24", "audio", 0},
-  {0, "MP4A-LATM", "audio", 0},
+  {0, "MP4A-LATM", "audio", 48000},
   {0, "mpa-robust", "audio", 90000},
   {0, "parityfec", "audio", 0},
   {0, "SMV", "audio", 8000},

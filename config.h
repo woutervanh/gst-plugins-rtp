@@ -9,8 +9,8 @@
  */
 
 
-#define GSTBARCORTP_VERSION "1.0.0.11"
-#define VERSION "1.0.0.11"
+#define GSTBARCORTP_VERSION "1.0.0.11.1"
+#define VERSION "1.0.0.11.1"
 #define PACKAGE "gst-plugins-barcortp"
 
 /* #undef GSOAP_FOUND */
