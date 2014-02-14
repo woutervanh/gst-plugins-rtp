@@ -540,6 +540,10 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   gst_pad_set_active (self->ghostpad, TRUE);
   gst_element_add_pad (GST_ELEMENT (self), self->ghostpad);
 
+  /* we don't expect any more pads */
+  /* FIXME: check what happens when there are multiple pads added */
+  gst_element_no_more_pads (GST_ELEMENT (self));
+
   gst_object_unref (pad);
 }
 
