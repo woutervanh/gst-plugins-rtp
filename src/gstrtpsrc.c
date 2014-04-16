@@ -43,7 +43,7 @@ enum
 #define DEFAULT_SELECT_PT         		(-1)
 #define DEFAULT_PROP_MULTICAST_IFACE 	(NULL)
 #define DEFAULT_PROP_FORCE_IPV4   		(FALSE)
-#define DEFAULT_PROP_ENCRYPT          (TRUE)
+#define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src%d",
@@ -418,6 +418,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       break;
     case PROP_ENCRYPT:
       self->encrypt = g_value_get_boolean (value);
+      GST_DEBUG_OBJECT (self, "set encrypt: %d", self->encrypt);
       break;
     case PROP_KEY_DERIV_RATE:
       self->key_derivation_rate = g_value_get_uint (value);
@@ -521,7 +522,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
     }
     gst_caps_unref (rtcp_caps);
 
-    if (self->select_pt > -1) {
+    if (G_UNLIKELY(self->select_pt > -1)) {
       rtcp_caps = gst_caps_new_simple ("application/x-rtp",
           "payload", G_TYPE_INT, self->select_pt, NULL);
       if (G_UNLIKELY (!gst_caps_can_intersect (caps, rtcp_caps))) {
@@ -720,7 +721,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
     g_return_val_if_fail (rtpsrc->rtcp_sink != NULL, FALSE);
   }
 
-  if (rtpsrc->encrypt) {
+  if (G_UNLIKELY(rtpsrc->encrypt)) {
     rtpsrc->rtpdecrypt = gst_element_factory_make ("rtpdecrypt", NULL);
     g_return_val_if_fail (rtpsrc->rtpdecrypt != NULL, FALSE);
   }
