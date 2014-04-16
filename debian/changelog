@@ -1,3 +1,16 @@
+gst-plugins-barcortp (1.0.0-12) vclub; urgency=low
+
+  [ Paul HENRYS ]
+  * 48k for MP4A-LATM
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Wed, 12 Feb 2014 13:30:11 +0000
+
+gst-plugins-barcortp (1.0.0-11.1) vclub; urgency=low
+
+  * Fix property name
+
+ -- Paul HENRYS <visechelle@gmail.com>  Tue, 03 Sep 2013 15:12:46 +0200
+
 gst-plugins-barcortp (1.0.0-11) unstable; urgency=low
 
   * Initial version.

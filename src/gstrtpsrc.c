@@ -267,64 +267,6 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 }
 
 static void
-gst_rtp_src_check_uri (GstRtpSrc * self)
-{
-  GHashTable *hash_table = NULL;
-  gchar *encoding_name;
-  GList *keys = NULL, *key;
-
-
-  g_return_if_fail (self->uri != NULL);
-
-  GST_DEBUG_OBJECT (self, "rtpsrc check uri");
-  if (self->uri->query) {
-    hash_table = soup_form_decode (self->uri->query);
-    keys = g_hash_table_get_keys (hash_table);
-
-    for (key = keys; key; key = key->next) {
-      if (g_strcmp0 ((gchar *) key->data, "encoding-name") == 0) {
-        GST_DEBUG_OBJECT (self, "found encoding name");
-        encoding_name = (gchar *) g_hash_table_lookup (hash_table, key->data);
-        g_object_set (G_OBJECT (self), "encoding-name", encoding_name, NULL);
-      } else if (g_strcmp0 ((gchar *) key->data, "ignore-pt") == 0) {
-        g_object_set (G_OBJECT (self), "ignore-pt",
-            gst_barco_query_to_boolean ((gchar *)
-                g_hash_table_lookup (hash_table, key->data)), NULL);
-      } else if (g_strcmp0 ((gchar *) key->data, "force-ipv4") == 0) {
-        g_object_set (G_OBJECT (self), "force-ipv4",
-            (gchar *) g_hash_table_lookup (hash_table, key->data), NULL);
-        GST_DEBUG_OBJECT (self, "force-ipv4: %s",
-            (self->force_ipv4) ? "TRUE" : "FALSE");
-      } else if (g_strcmp0 ((gchar *) key->data, "buffer-size") == 0) {
-        g_object_set (G_OBJECT (self), "buffer-size",
-            g_ascii_strtoull (
-                (gchar *) g_hash_table_lookup (hash_table, key->data),
-                NULL, 0), NULL);
-        GST_DEBUG_OBJECT (self, "buffer-size: %u", self->buffer_size);
-      } else if (g_strcmp0 ((gchar *) key->data, "multicast-iface") == 0) {
-        g_object_set (G_OBJECT (self), "multicast-iface",
-            (gchar *) g_hash_table_lookup (hash_table, key->data), NULL);
-        GST_DEBUG_OBJECT (self, "multicast_iface : %s", self->multicast_iface);
-      } else if (g_strcmp0 ((gchar *) key->data, "encrypt") == 0) {
-        g_object_set (G_OBJECT (self), "encrypt",
-            gst_barco_query_to_boolean ((gchar *)
-                g_hash_table_lookup (hash_table, key->data)), NULL);
-        GST_DEBUG_OBJECT (self, "encrypt: %s",
-            self->encrypt ? "TRUE" : "FALSE");
-      } else if (g_strcmp0 ((gchar *) key->data, "rate") == 0) {
-        g_object_set (G_OBJECT (self), "rate",
-            g_ascii_strtoull (
-                (gchar *) g_hash_table_lookup (hash_table, key->data),
-                NULL, 0), NULL);
-        GST_DEBUG_OBJECT (self, "rate: %u", self->key_derivation_rate);
-      }
-    }
-    g_list_free (keys);
-    g_hash_table_destroy (hash_table);
-  }
-}
-
-static void
 gst_rtp_src_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
@@ -337,7 +279,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       if (self->uri)
         soup_uri_free (self->uri);
       self->uri = soup_uri_new (g_value_get_string (value));
-      gst_rtp_src_check_uri (self);
+      gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
       if (self->rtp_src) {
         uri = g_strdup_printf ("udp://%s:%d", self->uri->host, self->uri->port);
         g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
@@ -599,6 +541,10 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   gst_pad_set_active (self->ghostpad, TRUE);
   gst_element_add_pad (GST_ELEMENT (self), self->ghostpad);
 
+  /* we don't expect any more pads */
+  /* FIXME: check what happens when there are multiple pads added */
+  gst_element_no_more_pads (GST_ELEMENT (self));
+
   gst_object_unref (pad);
 }
 
@@ -608,6 +554,7 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
   /*caps="application/x-rtp, media=(string)audio, clock-rate=(int)32000, encoding-name=(string)MP4A-LATM, payload=(int)96" */
   /*caps="application/x-rtp, media=(string)audio, clock-rate=(int)32000, encoding-name=MPEG4-GENERIC,config=(string)1288,sizelength=(string)13" */
   /*caps="application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)L16, encoding-params=(string)2, channels=(int)2, payload=(int)96" */
+  /* application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)MP4A-LATM" */
   if (g_strcmp0 (encoding_name, "MPEG4-GENERIC-AUDIO") == 0) {
     gst_caps_set_simple (ret,
         "clock-rate", G_TYPE_INT, 32000,
@@ -618,7 +565,15 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
   if (g_strcmp0 (encoding_name, "L16") == 0) {
     gst_caps_set_simple (ret,
         "clock-rate", G_TYPE_INT, 48000,
-        "encoding-name", G_TYPE_STRING, "L16", "channels", G_TYPE_INT, 2, NULL);
+        "encoding-name", G_TYPE_STRING, "L16", 
+        "channels", G_TYPE_INT, 2, NULL);
+  }
+  if (g_strcmp0 (encoding_name, "MP4A-LATM") == 0) {
+    gst_caps_set_simple (ret,
+        "media", G_TYPE_STRING, "audio",
+        "clock-rate", G_TYPE_INT, 48000,
+        "encoding-name", G_TYPE_STRING, "MP4A-LATM", 
+        "channels", G_TYPE_INT, 2, NULL);
   }
   if (g_strcmp0 (encoding_name, "RAW-RGB24") == 0) {
     gst_caps_set_simple (ret,
@@ -768,7 +723,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
         "buffer-size", rtpsrc->buffer_size,
         "multicast-iface", rtpsrc->multicast_iface,
         "auto-multicast", FALSE, 
-        "closefd", FALSE,
+        "close-socket", FALSE,
         NULL);
   }
   g_object_set (G_OBJECT (rtpsrc->rtpbin),
