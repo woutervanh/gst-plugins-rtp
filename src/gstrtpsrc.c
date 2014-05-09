@@ -670,6 +670,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
   g_return_val_if_fail (rtpsrc->rtpbin != NULL, FALSE);
 
   if (rtpsrc->enable_rtcp) {
+    GST_DEBUG_OBJECT (rtpsrc, "Enabling RTCP");
     rtpsrc->rtcp_src = gst_element_factory_make ("udpsrc", NULL);
     rtpsrc->rtcp_sink = gst_element_factory_make ("udpsink", NULL);
     g_return_val_if_fail (rtpsrc->rtcp_src != NULL, FALSE);
@@ -690,8 +691,9 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
     uri = g_strdup_printf ("udp://%s:%d", rtpsrc->uri->host, rtpsrc->uri->port);
     g_object_set (G_OBJECT (rtpsrc->rtp_src), "uri", uri, NULL);
     g_free (uri);
-  } else
+  } else {
     g_object_set (G_OBJECT (rtpsrc->rtp_src), "port", rtpsrc->uri->port, NULL);
+  }
 
   g_object_set (G_OBJECT (rtpsrc->rtp_src),
       "reuse", TRUE,
@@ -727,8 +729,11 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
         NULL);
   }
   g_object_set (G_OBJECT (rtpsrc->rtpbin),
-      "do-lost", TRUE, "autoremove", TRUE,
-      "ignore-pt", rtpsrc->ignore_pt, "latency", rtpsrc->latency, NULL);
+      "do-lost", TRUE, 
+      "autoremove", TRUE,
+      "ignore-pt", rtpsrc->ignore_pt, 
+      "latency", rtpsrc->latency, 
+      NULL);
   if (rtpsrc->encrypt)
     g_object_set (G_OBJECT (rtpsrc->rtpdecrypt), "rate",
         rtpsrc->key_derivation_rate, NULL);
@@ -740,12 +745,14 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
   gst_bin_add_many (GST_BIN (rtpsrc), rtpsrc->rtp_src, rtpsrc->rtpbin, NULL);
   lastelt = rtpsrc->rtp_src;
   if (rtpsrc->encrypt) {
+    GST_DEBUG_OBJECT(rtpsrc, "Adding decryption");
     gst_bin_add (GST_BIN (rtpsrc), rtpsrc->rtpdecrypt);
     gst_element_link (lastelt, rtpsrc->rtpdecrypt);
 
     lastelt = rtpsrc->rtpdecrypt;
   }
   if (rtpsrc->select_pt > -1) {
+    GST_DEBUG_OBJECT(rtpsrc, "Adding PT change");
     gst_bin_add (GST_BIN (rtpsrc), rtpsrc->rtpptchange);
     gst_element_link (lastelt, rtpsrc->rtpptchange);
     lastelt = rtpsrc->rtpptchange;
@@ -759,6 +766,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
       G_CALLBACK (gst_rtp_src_rtpbin_pad_added_cb), rtpsrc);
 
   if (rtpsrc->enable_rtcp) {
+    GST_DEBUG_OBJECT(rtpsrc, "Adding elements and linking up.");
     gst_bin_add_many (GST_BIN (rtpsrc), rtpsrc->rtcp_src, rtpsrc->rtcp_sink,
         NULL);
 
