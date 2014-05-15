@@ -42,7 +42,6 @@ enum
 #define DEFAULT_ENABLE_RTCP	      		(TRUE)
 #define DEFAULT_SELECT_PT         		(-1)
 #define DEFAULT_PROP_MULTICAST_IFACE 	(NULL)
-#define DEFAULT_PROP_FORCE_IPV4   		(FALSE)
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 
@@ -167,20 +166,6 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
       g_param_spec_boolean ("ignore-pt", "Ignore PT",
           "Ignore RTP Payload type for demultiplexing", DEFAULT_IGNORE_PT,
           G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::force-ipv4
-   *
-   * Force the use of IPv4
-   *
-   * Since: 1.0.0
-   */
-#if 0
-  g_object_class_install_property (oclass, PROP_FORCE_IPV4,
-      g_param_spec_boolean ("force-ipv4", "Force IPv4",
-          "Force only IPv4 sockets", DEFAULT_PROP_FORCE_IPV4,
-          G_PARAM_READWRITE));
-#endif
 
   /**
    * GstRtpSrc::multicast-iface
@@ -346,13 +331,6 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       xgst_barco_propagate_setting (self, "multicast-iface",
           self->multicast_iface);
       break;
-    case PROP_FORCE_IPV4:
-      self->force_ipv4 = g_value_get_boolean (value);
-      GST_DEBUG_OBJECT (self, "set force-ipv4: %d", self->force_ipv4);
-      if (self->enable_rtcp && self->rtcp_sink)
-        g_object_set (G_OBJECT (self->rtcp_sink), "force-ipv4",
-            self->force_ipv4, NULL);
-      break;
     case PROP_BUFFER_SIZE:
       self->buffer_size = g_value_get_uint (value);
       GST_DEBUG_OBJECT (self, "set buffer-size: %u", self->buffer_size);
@@ -411,9 +389,6 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
       break;
     case PROP_MULTICAST_IFACE:
       g_value_set_string (value, self->multicast_iface);
-      break;
-    case PROP_FORCE_IPV4:
-      g_value_set_boolean (value, self->force_ipv4);
       break;
     case PROP_BUFFER_SIZE:
       g_value_set_uint (value, self->buffer_size);
@@ -712,28 +687,34 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
           "port", rtpsrc->uri->port + 1, NULL);
     }
     g_object_set (G_OBJECT (rtpsrc->rtcp_src),
-        "multicast-iface", rtpsrc->multicast_iface, "close-socket", FALSE,
-        "buffer-size", rtpsrc->buffer_size, "auto-multicast", TRUE, NULL);
+        "multicast-iface", rtpsrc->multicast_iface, 
+        "close-socket", FALSE,
+        "buffer-size", rtpsrc->buffer_size, 
+        "auto-multicast", TRUE, 
+        NULL);
+
     /* auto-multicast should be set to false as rtcp_src will already
      * join the multicast group */
+
     g_object_set (G_OBJECT (rtpsrc->rtcp_sink),
         "host", rtpsrc->uri->host,
         "port", rtpsrc->uri->port + 1,
         "sync", FALSE,
         "async", FALSE,
-        "force-ipv4", rtpsrc->force_ipv4,
         "buffer-size", rtpsrc->buffer_size,
         "multicast-iface", rtpsrc->multicast_iface,
         "auto-multicast", FALSE, 
         "close-socket", FALSE,
         NULL);
   }
+
   g_object_set (G_OBJECT (rtpsrc->rtpbin),
       "do-lost", TRUE, 
       "autoremove", TRUE,
       "ignore-pt", rtpsrc->ignore_pt, 
       "latency", rtpsrc->latency, 
       NULL);
+
   if (rtpsrc->encrypt)
     g_object_set (G_OBJECT (rtpsrc->rtpdecrypt), "rate",
         rtpsrc->key_derivation_rate, NULL);
@@ -792,9 +773,11 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
     /* First we update the state of rtcp_src so that it creates a socket */
     if(!gst_element_sync_state_with_parent (rtpsrc->rtcp_src))
       GST_ERROR_OBJECT(rtpsrc, "Could not set RTCP source to playing");
+
     /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
     rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (rtpsrc);
-    g_object_set (G_OBJECT (rtpsrc->rtcp_sink), "socket", rtcpfd, NULL);
+    /*g_object_set (G_OBJECT (rtpsrc->rtcp_sink), "socket", rtcpfd, NULL);*/
+
     /* And we sync the state of rtcp_sink */
     if(!gst_element_sync_state_with_parent (rtpsrc->rtcp_sink))
       GST_ERROR_OBJECT(rtpsrc, "Could not set RTCP sink to playing");
@@ -859,7 +842,6 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->ignore_ssrc = DEFAULT_IGNORE_SSRC;
   self->enable_rtcp = DEFAULT_ENABLE_RTCP;
   self->multicast_iface = DEFAULT_PROP_MULTICAST_IFACE;
-  self->force_ipv4 = DEFAULT_PROP_FORCE_IPV4;
   self->buffer_size = DEFAULT_BUFFER_SIZE;
   self->latency = DEFAULT_LATENCY_MS;
   self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
