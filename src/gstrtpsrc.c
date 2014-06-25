@@ -533,9 +533,11 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
   /* application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)MP4A-LATM" */
   if (g_strcmp0 (encoding_name, "MPEG4-GENERIC-AUDIO") == 0) {
     gst_caps_set_simple (ret,
-        "clock-rate", G_TYPE_INT, 32000,
+        "media", G_TYPE_STRING, "audio",
+        "clock-rate", G_TYPE_INT, 48000,
         "encoding-name", G_TYPE_STRING, "MPEG4-GENERIC",
-        "config", G_TYPE_STRING, "1288",
+        "mode", G_TYPE_STRING, "AAC-hbr",
+        "config", G_TYPE_STRING, "1190",
         "sizelength", G_TYPE_STRING, "13", NULL);
   }
   if (g_strcmp0 (encoding_name, "L16") == 0) {
