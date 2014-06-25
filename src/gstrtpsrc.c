@@ -289,7 +289,8 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         g_free (self->encoding_name);
       self->encoding_name = g_value_dup_string (value);
       GST_INFO_OBJECT (self,
-          "Force encoding name, do you know what you are doing?");
+          "Force encoding name (%s), do you know what you are doing?",
+            self->encoding_name);
       if (self->rtp_src) {
         caps = gst_rtp_src_request_pt_map (NULL, 0, 96, self);
         g_object_set (G_OBJECT (self->rtp_src), "caps", caps, NULL);
