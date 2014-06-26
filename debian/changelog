@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.0.0-14) vclub; urgency=low
+
+  * support MPEG4-GENERIC-AUDIO
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Thu, 26 Jun 2014 11:43:52 +0000
+
 gst-plugins-barcortp (1.0.0-13) vclub; urgency=low
 
   * rebuild with encryption set to false by default
