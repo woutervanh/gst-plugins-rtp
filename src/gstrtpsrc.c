@@ -257,31 +257,33 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
 {
   GstRtpSrc *self = GST_RTP_SRC (object);
   GstCaps *caps = NULL;
-  gchar *uri = NULL;
 
   switch (prop_id) {
-    case PROP_URI:
-      if (self->uri)
-        soup_uri_free (self->uri);
-      self->uri = soup_uri_new (g_value_get_string (value));
-      gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
-      if (self->rtp_src) {
-        uri = g_strdup_printf ("udp://%s:%d", self->uri->host, self->uri->port);
-        g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
-        g_free (uri);
-      }
-      if (self->enable_rtcp && self->rtcp_src) {
-        if (gst_rtp_src_is_multicast (self->uri->host)) {
-          uri =
-              g_strdup_printf ("udp://%s:%d", self->uri->host,
-              self->uri->port + 1);
-          g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
+    case PROP_URI:{
+        gchar *uri = NULL;
+        if (self->uri)
+          soup_uri_free (self->uri);
+        self->uri = soup_uri_new (g_value_get_string (value));
+
+        gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
+        if (self->rtp_src) {
+          uri = g_strdup_printf ("udp://%s:%d", self->uri->host, self->uri->port);
+          g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
           g_free (uri);
-        } else {
-          g_object_set (G_OBJECT (self->rtcp_src),
-              "port", self->uri->port + 1, NULL);
         }
-        g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
+        if (self->enable_rtcp && self->rtcp_src) {
+          if (gst_rtp_src_is_multicast (self->uri->host)) {
+            uri =
+                g_strdup_printf ("udp://%s:%d", self->uri->host,
+                self->uri->port + 1);
+            g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
+            g_free (uri);
+          } else {
+            g_object_set (G_OBJECT (self->rtcp_src),
+                "port", self->uri->port + 1, NULL);
+          }
+          g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
+        }
       }
       break;
     case PROP_ENCODING_NAME:
