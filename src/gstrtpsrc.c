@@ -294,6 +294,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
           "Force encoding name (%s), do you know what you are doing?",
             self->encoding_name);
       if (self->rtp_src) {
+        GST_INFO_OBJECT(self, "Requesting PT map");
         caps = gst_rtp_src_request_pt_map (NULL, 0, 96, self);
         g_object_set (G_OBJECT (self->rtp_src), "caps", caps, NULL);
         gst_caps_unref (caps);
@@ -414,19 +415,19 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
 {
   GstCaps *caps;
   gchar *name;
-  GstRtpSrc *self = (GstRtpSrc *) data;
+  GstRtpSrc *self = GST_RTP_SRC (data);
   GstPad *binpad;
   GstElement *capssetter;
   GstStructure *s = NULL;
 
   caps = gst_pad_query_caps (pad, NULL);
+
   name = gst_pad_get_name (pad);
-  GST_DEBUG_OBJECT (self, "adding a pad %s with caps %" GST_PTR_FORMAT, name,
-      caps);
+  GST_DEBUG_OBJECT (self, "Adding a pad %s with caps %" GST_PTR_FORMAT, name, caps);
   g_free (name);
 
   if (GST_PAD_DIRECTION (pad) == GST_PAD_SINK) {
-    GST_DEBUG_OBJECT (element, "Sink pad => Nothing to do");
+    GST_DEBUG_OBJECT (element, "Ignoring sink pad.");
     gst_caps_unref (caps);
     return;
   }
@@ -435,11 +436,12 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
     GstCaps *rtcp_caps = gst_caps_new_empty_simple ("application/x-rtcp");
 
     if (gst_caps_can_intersect (caps, rtcp_caps)) {
-      GST_DEBUG_OBJECT (self, "not interested in pad with rtcp caps");
+      GST_DEBUG_OBJECT (self, "Ignoring RTCP pad.");
       gst_caps_unref (rtcp_caps);
       gst_caps_unref (caps);
       return;
     }
+
     gst_caps_unref (rtcp_caps);
 
     if (G_UNLIKELY(self->select_pt > -1)) {
@@ -571,12 +573,16 @@ gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id, guint pt,
     GstRtpSrc * rtpsrc)
 {
   const RtpParameters *p;
-
   GstCaps *ret = NULL;
   int i = 0;
 
-  GST_DEBUG_OBJECT (rtpsrc, "requesting caps for pt %u in session %u", pt,
-      sess_id);
+  GST_DEBUG_OBJECT (rtpsrc, "requesting caps for pt %u in session %u", pt, sess_id);
+
+  {
+    gboolean ignore_pt;
+    g_object_get (G_OBJECT (rtpsrc->rtpbin), "ignore-pt", &ignore_pt, NULL);
+    GST_DEBUG_OBJECT(rtpsrc, "ignore pt is %s", (ignore_pt)?"True":"False");
+  }
 
   if (rtpsrc->encoding_name)
     goto dynamic;
@@ -632,6 +638,7 @@ beach:
       "payload", G_TYPE_INT, (p->pt) ? p->pt : pt, NULL);
 
   gst_rtp_src_fixup_caps (ret, p->encoding_name);
+  GST_DEBUG_OBJECT (rtpsrc, "Decided on caps %" GST_PTR_FORMAT, ret);
 
   return ret;
 }
@@ -644,8 +651,10 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
 
   /* Create elements */
   GST_DEBUG_OBJECT (rtpsrc, "Creating elements");
+
   rtpsrc->rtp_src = gst_element_factory_make ("udpsrc", NULL);
   g_return_val_if_fail (rtpsrc->rtp_src != NULL, FALSE);
+
   rtpsrc->rtpbin = gst_element_factory_make ("rtpbin", NULL);
   g_return_val_if_fail (rtpsrc->rtpbin != NULL, FALSE);
 
@@ -723,6 +732,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
   if (rtpsrc->encrypt)
     g_object_set (G_OBJECT (rtpsrc->rtpdecrypt), "rate",
         rtpsrc->key_derivation_rate, NULL);
+
   if (rtpsrc->select_pt > -1)
     g_object_set (G_OBJECT (rtpsrc->rtpptchange), "pt-select",
         rtpsrc->select_pt, NULL);
