@@ -484,6 +484,27 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
     }
   }
 
+  if (G_UNLIKELY (self->ignore_pt)){
+    GstCaps *caps = gst_rtp_src_request_pt_map(NULL, 0, 96, self);
+    GstElement *filter = gst_element_factory_make ("capsfilter", NULL);
+    GstPad *sinkpad;
+
+    GST_DEBUG_OBJECT (self, "PT ignored, need to set caps to caps %" GST_PTR_FORMAT, caps);
+    g_object_set (G_OBJECT (filter), "caps", caps, NULL);
+    gst_caps_unref (caps);
+
+    gst_bin_add (GST_BIN (self), filter);
+    gst_element_sync_state_with_parent (filter);
+
+    sinkpad = gst_element_get_static_pad (filter, "sink");
+    gst_object_ref (pad);
+    gst_pad_link (pad, sinkpad);
+    gst_object_unref (pad);
+    gst_object_unref (sinkpad);
+
+    pad = gst_element_get_static_pad (filter, "src");
+  }
+
   name = g_strdup_printf ("src%d", self->n_rtpbin_pads++);
   self->ghostpad = gst_ghost_pad_new (name, pad);
   g_free (name);
@@ -547,12 +568,6 @@ gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id, guint pt,
   int i = 0;
 
   GST_DEBUG_OBJECT (rtpsrc, "requesting caps for pt %u in session %u", pt, sess_id);
-
-  {
-    gboolean ignore_pt;
-    g_object_get (G_OBJECT (rtpsrc->rtpbin), "ignore-pt", &ignore_pt, NULL);
-    GST_DEBUG_OBJECT(rtpsrc, "ignore pt is %s", (ignore_pt)?"True":"False");
-  }
 
   if (rtpsrc->encoding_name)
     goto dynamic;
