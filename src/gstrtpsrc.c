@@ -26,7 +26,6 @@ enum
   PROP_IGNORE_PT,
   PROP_IGNORE_SSRC,
   PROP_MULTICAST_IFACE,
-  PROP_FORCE_IPV4,
   PROP_BUFFER_SIZE,
   PROP_ENCRYPT,
   PROP_KEY_DERIV_RATE,
@@ -416,8 +415,6 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   GstCaps *caps;
   gchar *name;
   GstRtpSrc *self = GST_RTP_SRC (data);
-  GstPad *binpad;
-  GstElement *capssetter;
   GstStructure *s = NULL;
 
   caps = gst_pad_query_caps (pad, NULL);
@@ -462,43 +459,16 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
       }
       gst_caps_unref (rtcp_caps);
     }
-    gst_caps_unref (caps);
+    /*gst_caps_unref (caps);*/
+  }
+  else {
+    GST_WARNING_OBJECT(self, "Pad has NO caps, this is not good.");
   }
 
-  /* if ignore_pt is set; set the pt to 96; to avoid issues with
-   * e.g. Bosch' rather free interpretation of standards. */
-  if (G_UNLIKELY (self->ignore_pt)) {
-    capssetter = gst_element_factory_make ("capssetter", NULL);
-    g_return_if_fail (capssetter != NULL);
-    caps = gst_caps_new_simple ("application/x-rtp",
-        "payload", G_TYPE_INT, 96, NULL);
-
-    GST_DEBUG_OBJECT (self, "Setting caps to pt 96.");
-
-    g_object_set (capssetter, "caps", caps, NULL);
-    gst_caps_unref (caps);
-
-    gst_bin_add_many (GST_BIN_CAST (self), capssetter, NULL);
-
-    binpad = gst_element_get_static_pad (capssetter, "sink");
-
-    gst_pad_link (pad, binpad);
-    gst_object_unref (binpad);
-
-    gst_element_sync_state_with_parent (capssetter);
-
-    pad = gst_element_get_static_pad (capssetter, "src");
-
-  } else {
-    gst_object_ref (pad);
-  }
+  gst_object_ref (pad);
 
   name = gst_pad_get_name (pad);
-  caps = gst_pad_get_current_caps (pad);
-  GST_DEBUG_OBJECT (self,
-      "new pad on rtpbin with %s with caps %" GST_PTR_FORMAT, name, caps);
-  if (caps)
-    gst_caps_unref (caps);
+  GST_DEBUG_OBJECT (self, "New pad %s on rtpbin with caps %" GST_PTR_FORMAT, name, caps);
   g_free (name);
 
   if (G_UNLIKELY (self->ignore_ssrc)) {
@@ -791,7 +761,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
 
     /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
     rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (rtpsrc);
-    /*g_object_set (G_OBJECT (rtpsrc->rtcp_sink), "socket", rtcpfd, NULL);*/
+    g_object_set (G_OBJECT (rtpsrc->rtcp_sink), "socket", rtcpfd, NULL);
 
     /* And we sync the state of rtcp_sink */
     if(!gst_element_sync_state_with_parent (rtpsrc->rtcp_sink))

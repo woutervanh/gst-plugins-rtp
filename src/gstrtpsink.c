@@ -19,7 +19,6 @@ enum
   PROP_TTL,
   PROP_TTL_MC,
   PROP_SRC_PORT,
-  PROP_FORCE_IPV4,
   PROP_ENCRYPT,
   PROP_KEY_DERIV_RATE,
   PROP_LAST
@@ -30,7 +29,6 @@ enum
 #define DEFAULT_PROP_TTL              (64)
 #define DEFAULT_PROP_TTL_MC           (8)
 #define DEFAULT_SRC_PORT              (0)
-#define DEFAULT_PROP_FORCE_IPV4       (FALSE)
 #define LOCAL_ADDRESS_IPV4			      "0.0.0.0" /* "127.0.0.1" */
 #define LOCAL_ADDRESS_IPV6			      "::"      /* "::1" */
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
@@ -119,18 +117,6 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
-   * GstRtpSink::force-ipv4
-   *
-   * Force the use of IPv4
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_FORCE_IPV4,
-      g_param_spec_boolean ("force-ipv4", "Force IPv4",
-          "Force only IPv4 sockets", DEFAULT_PROP_FORCE_IPV4,
-          G_PARAM_READWRITE));
-
-  /**
    * GstRtpSink::encrypt
    *
    * Are RTP packets encrypted using AES?
@@ -190,7 +176,7 @@ gst_rtp_sink_create_and_bind_rtp_socket (GstRtpSink * rtpsink)
   GST_DEBUG_OBJECT (rtpsink, "Create rtp_sink socket");
 
   /* create sender sockets try IPV6, fall back to IPV4 */
-  if (rtpsink->force_ipv4 || (rtpsink->rtp_sink_socket =
+  if ((rtpsink->rtp_sink_socket =
           g_socket_new (G_SOCKET_FAMILY_IPV6,
               G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &err)) == NULL) {
     if ((rtpsink->rtp_sink_socket = g_socket_new (G_SOCKET_FAMILY_IPV4,
@@ -270,15 +256,6 @@ static void
 gst_rtp_sink_check_uri (GstRtpSink * rtpsink)
 {
   if (rtpsink->uri) {
-    GInetAddress *addr = g_inet_address_new_from_string (rtpsink->uri->host);
-    GST_DEBUG_OBJECT (rtpsink, "host is %s", rtpsink->uri->host);
-    if (g_inet_address_get_family (addr) == G_SOCKET_FAMILY_IPV4) {
-      GST_DEBUG_OBJECT (rtpsink, "forcing use of IPv4 based on %s",
-          rtpsink->uri->host);
-      g_object_set (G_OBJECT (rtpsink), "force-ipv4", TRUE, NULL);
-    }
-    g_object_unref (addr);
-
     gst_barco_parse_uri (G_OBJECT (rtpsink), rtpsink->uri, GST_CAT_DEFAULT);
   }
 }
@@ -306,10 +283,6 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
       rtpsink->src_port = g_value_get_int (value);
       close_and_unref_socket (rtpsink->rtp_sink_socket);
       gst_rtp_sink_create_and_bind_rtp_socket (rtpsink);
-      break;
-    case PROP_FORCE_IPV4:
-      rtpsink->force_ipv4 = g_value_get_boolean (value);
-      xgst_barco_propagate_setting (rtpsink, "force-ipv4", rtpsink->force_ipv4);
       break;
     case PROP_ENCRYPT:
       rtpsink->encrypt = g_value_get_boolean (value);
@@ -351,9 +324,6 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
       break;
     case PROP_SRC_PORT:
       g_value_set_int (value, rtpsink->src_port);
-      break;
-    case PROP_FORCE_IPV4:
-      g_value_set_boolean (value, rtpsink->force_ipv4);
       break;
     case PROP_ENCRYPT:
       g_value_set_boolean (value, rtpsink->encrypt);
@@ -506,7 +476,6 @@ gst_rtp_sink_start (GstRtpSink * rtpsink)
       "async", FALSE,
       "ttl", rtpsink->ttl,
       "ttl-mc", rtpsink->ttl_mc,
-      "force-ipv4", rtpsink->force_ipv4,
       "host", rtpsink->uri->host, "port", rtpsink->uri->port,
       "socket", rtpsink->rtp_sink_socket, "auto-multicast", TRUE, NULL);
 
@@ -517,7 +486,6 @@ gst_rtp_sink_start (GstRtpSink * rtpsink)
       "async", FALSE,
       "ttl", rtpsink->ttl,
       "ttl-mc", rtpsink->ttl_mc,
-      "force-ipv4", rtpsink->force_ipv4,
       "host", rtpsink->uri->host, "port", rtpsink->uri->port + 1,
       "close-socket", FALSE, "auto-multicast", FALSE, NULL);
 
@@ -635,7 +603,6 @@ gst_rtp_sink_init (GstRtpSink * rtpsink)
   rtpsink->ttl = DEFAULT_PROP_TTL;
   rtpsink->ttl_mc = DEFAULT_PROP_TTL_MC;
   rtpsink->src_port = DEFAULT_SRC_PORT;
-  rtpsink->force_ipv4 = DEFAULT_PROP_FORCE_IPV4;
   rtpsink->rtp_sink_socket = NULL;
   rtpsink->rtcp_src_socket = NULL;
   rtpsink->encrypt = DEFAULT_PROP_ENCRYPT;

@@ -33,7 +33,6 @@ struct _GstRtpSink
   gint ttl_mc;
   gint pt;
   gint src_port;
-  gboolean force_ipv4;
   gboolean encrypt;
   guint32 key_derivation_rate;
 

@@ -29,7 +29,6 @@ struct _GstRtpSrc
   gboolean ignore_pt;
   gboolean ignore_ssrc;
   gchar *multicast_iface;
-  gboolean force_ipv4;
   guint buffer_size;
   guint latency;
   gboolean encrypt;
