@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.0.0-16) vclub; urgency=low
+
+  * rebuild with standardise pt/ssrc change/select
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 15 Dec 2014 17:00:43 +0000
+
 gst-plugins-barcortp (1.0.0-15) vclub; urgency=low
 
   * Do not support force-ipv4 anymore
