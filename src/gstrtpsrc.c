@@ -22,9 +22,10 @@ enum
   PROP_ENCODING_NAME,
   PROP_ENABLE_RTCP,
   PROP_LATENCY,
-  PROP_SELECT_PT,
-  PROP_IGNORE_PT,
-  PROP_IGNORE_SSRC,
+  PROP_PT_CHANGE,
+  PROP_PT_SELECT,
+  PROP_SSRC_CHANGE,
+  PROP_SSRC_SELECT,
   PROP_MULTICAST_IFACE,
   PROP_BUFFER_SIZE,
   PROP_ENCRYPT,
@@ -36,13 +37,23 @@ enum
 #define DEFAULT_PROP_MUXER        		(NULL)
 #define DEFAULT_LATENCY_MS        		(200)
 #define DEFAULT_BUFFER_SIZE       		(0)
-#define DEFAULT_IGNORE_PT	        		(FALSE)
-#define DEFAULT_IGNORE_SSRC	      		(FALSE)
 #define DEFAULT_ENABLE_RTCP	      		(TRUE)
-#define DEFAULT_SELECT_PT         		(-1)
 #define DEFAULT_PROP_MULTICAST_IFACE 	(NULL)
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
+
+/* 0 size means just pass the buffer along */
+#define GST_RTPPTCHANGE_DEFAULT_PT_NUMBER (0)
+#define GST_RTPPTCHANGE_DEFAULT_PT_SELECT (0)
+#define GST_RTPPTCHANGE_MIN_PT_NUMBER (0)
+#define GST_RTPPTCHANGE_MAX_PT_NUMBER (127)
+
+/* 0 size means just pass the buffer along */
+#define GST_RTPPTCHANGE_DEFAULT_SSRC_NUMBER (0)
+#define GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT (0)
+#define GST_RTPPTCHANGE_MIN_SSRC_NUMBER (0)
+#define GST_RTPPTCHANGE_MAX_SSRC_NUMBER (4294967295)
+
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src%d",
     GST_PAD_SRC,
@@ -103,19 +114,6 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
-   * GstRtpSrc::select-pt
-   *
-   * Some encoders multiplex audio/video in one RTP stream (evil). Select
-   * only one, only for RTP
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_SELECT_PT,
-      g_param_spec_int ("select-pt", "Select PT",
-          "Select RTP Payload type (ignore rest)", -1, 128, DEFAULT_SELECT_PT,
-          G_PARAM_READWRITE));
-
-  /**
    * GstRtpSrc::latency
    *
    * Default latency is 50, for MPEG4 large GOP sizes, this needs to be
@@ -138,32 +136,6 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
   g_object_class_install_property (oclass, PROP_ENABLE_RTCP,
       g_param_spec_boolean ("enable-rtcp", "Enable RTCP",
           "Enable RTCP feedback in RTP", DEFAULT_ENABLE_RTCP,
-          G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::ignore-ssrc
-   *
-   * Ignore SSRC changes in the stream and mask e.g. encoder crashes.
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_IGNORE_SSRC,
-      g_param_spec_boolean ("ignore-ssrc", "Ignore SSRC",
-          "Ignore RTP Synchronization source for demultiplexing",
-          DEFAULT_IGNORE_SSRC, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::ignore-pt
-   *
-   * Some encoders put e.g. the I frames on on pt and the P/B frames on
-   * another PT. This is really naughtly. Ignore these pt changes and do
-   * not demultiplex on them.
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_IGNORE_PT,
-      g_param_spec_boolean ("ignore-pt", "Ignore PT",
-          "Ignore RTP Payload type for demultiplexing", DEFAULT_IGNORE_PT,
           G_PARAM_READWRITE));
 
   /**
@@ -217,6 +189,70 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           " (not yet implemented)",
           0, G_MAXUINT32, DEFAULT_PROP_KEY_DERIV_RATE, G_PARAM_READWRITE));
 
+  /**
+   * GstRtpSrc::pt-change
+   *
+   * Change the payload type value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_PT_CHANGE,
+      g_param_spec_uint ("pt-change",
+          "Payload type to change to",
+          "Payload type with which to overwrite a previous value (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_PT_NUMBER,
+          GST_RTPPTCHANGE_MAX_PT_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_PT_NUMBER, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::pt-select
+   *
+   * Select based on the payload type value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_PT_SELECT,
+      g_param_spec_uint ("pt-select",
+          "Payload type to select",
+          "Payload type to select, others are dropped (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_PT_NUMBER,
+          GST_RTPPTCHANGE_MAX_PT_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_PT_SELECT, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::ssrc-change
+   *
+   * Change the SSRC value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_SSRC_CHANGE,
+      g_param_spec_uint ("ssrc-change",
+          "Payload type to change to",
+          "Payload type with which to overwrite a previous value (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
+          GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_SSRC_NUMBER, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::ssrc-select
+   *
+   * Select based on the SSRC value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_SSRC_SELECT,
+      g_param_spec_uint ("ssrc-select",
+          "Payload type to select",
+          "Payload type to select, others are dropped (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
+          GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT, G_PARAM_READWRITE));
+
   gst_element_class_add_pad_template (gstelement_class,
       gst_static_pad_template_get (&src_template));
 
@@ -237,7 +273,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
 GSocket*
 gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 {
-  GSocket *rtcpfd; 
+  GSocket *rtcpfd;
 
   g_object_get (G_OBJECT (self->rtcp_src), "used-socket", &rtcpfd,
       NULL);
@@ -304,24 +340,6 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       if (self->rtpbin)
         g_object_set (G_OBJECT (self->rtpbin), "latency", self->latency, NULL);
       break;
-    case PROP_SELECT_PT:
-      self->select_pt = g_value_get_int (value);
-      if (self->rtpptchange)
-        g_object_set (G_OBJECT (self->rtpptchange), "pt-select",
-            self->select_pt, NULL);
-      GST_DEBUG_OBJECT (self, "set select pt: %d", self->select_pt);
-      break;
-    case PROP_IGNORE_PT:
-      self->ignore_pt = g_value_get_boolean (value);
-      if (self->rtpbin)
-        g_object_set (G_OBJECT (self->rtpbin), "ignore-pt", self->ignore_pt,
-            NULL);
-      GST_DEBUG_OBJECT (self, "set ignore pt: %d", self->ignore_pt);
-      break;
-    case PROP_IGNORE_SSRC:
-      self->ignore_ssrc = g_value_get_boolean (value);
-      GST_DEBUG_OBJECT (self, "set ignore ssrc: %d", self->ignore_ssrc);
-      break;
     case PROP_ENABLE_RTCP:
       self->enable_rtcp = g_value_get_boolean (value);
       GST_DEBUG_OBJECT (self, "set enable-rtcp: %d", self->enable_rtcp);
@@ -349,6 +367,34 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         g_object_set (G_OBJECT (self->rtpdecrypt), "rate",
             self->key_derivation_rate, NULL);
       break;
+    case PROP_PT_CHANGE:
+      self->pt_change = g_value_get_uint (value);
+      if (self->rtpptchange)
+        g_object_set (G_OBJECT (self->rtpptchange), "pt-change", self->pt_change,
+            NULL);
+      GST_DEBUG_OBJECT (self, "set pt change: %u", self->pt_change);
+      break;
+    case PROP_PT_SELECT:
+      self->pt_select = g_value_get_uint (value);
+      if (self->rtpptchange)
+        g_object_set (G_OBJECT (self->rtpptchange), "pt-select",
+            self->pt_select, NULL);
+      GST_DEBUG_OBJECT (self, "set pt select: %u", self->pt_select);
+      break;
+    case PROP_SSRC_CHANGE:
+      self->ssrc_change = g_value_get_uint (value);
+      if (self->rtpptchange)
+        g_object_set (G_OBJECT (self->rtpptchange), "ssrc-change", self->ssrc_change,
+            NULL);
+      GST_DEBUG_OBJECT (self, "set ssrc change: %u", self->ssrc_change);
+      break;
+    case PROP_SSRC_SELECT:
+      self->ssrc_select = g_value_get_uint (value);
+      if (self->rtpptchange)
+        g_object_set (G_OBJECT (self->rtpptchange), "ssrc-select", self->ssrc_select,
+            NULL);
+      GST_DEBUG_OBJECT (self, "set ssrc select: %u", self->ssrc_select);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -375,17 +421,9 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
     case PROP_ENCODING_NAME:
       g_value_set_string (value, self->encoding_name);
       break;
-    case PROP_SELECT_PT:
-      g_value_set_int (value, self->select_pt);
       break;
     case PROP_LATENCY:
       g_value_set_uint (value, self->latency);
-      break;
-    case PROP_IGNORE_PT:
-      g_value_set_boolean (value, self->ignore_pt);
-      break;
-    case PROP_IGNORE_SSRC:
-      g_value_set_boolean (value, self->ignore_ssrc);
       break;
     case PROP_ENABLE_RTCP:
       g_value_set_boolean (value, self->enable_rtcp);
@@ -401,6 +439,18 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
       break;
     case PROP_KEY_DERIV_RATE:
       g_value_set_uint (value, self->key_derivation_rate);
+      break;
+    case PROP_PT_CHANGE:
+      g_value_set_uint (value, self->pt_change);
+      break;
+    case PROP_PT_SELECT:
+      g_value_set_uint (value, self->pt_select);
+      break;
+    case PROP_SSRC_CHANGE:
+      g_value_set_uint (value, self->ssrc_change);
+      break;
+    case PROP_SSRC_SELECT:
+      g_value_set_uint (value, self->ssrc_select);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -441,16 +491,35 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
 
     gst_caps_unref (rtcp_caps);
 
-    if (G_UNLIKELY(self->select_pt > -1)) {
+    if (G_UNLIKELY(self->ssrc_select > 0)) {
       rtcp_caps = gst_caps_new_simple ("application/x-rtp",
-          "payload", G_TYPE_INT, self->select_pt, NULL);
+          "payload", G_TYPE_INT, self->ssrc_select, NULL);
+      if (G_UNLIKELY (!gst_caps_can_intersect (caps, rtcp_caps))) {
+        s = gst_caps_get_structure (caps, 0);
+
+        /* This should not happened as rtpptchange drops buffers with wrong SSRC*/
+        GST_ERROR_OBJECT (self, "Received SSRC %d whereas ssrc-select equals %d.",
+            g_value_get_int (gst_structure_get_value (s, "ssrc")),
+            self->ssrc_select);
+
+        gst_caps_unref (rtcp_caps);
+        gst_caps_unref (caps);
+
+        return;
+      }
+      gst_caps_unref (rtcp_caps);
+    }
+
+    if (G_UNLIKELY(self->pt_select > 0)) {
+      rtcp_caps = gst_caps_new_simple ("application/x-rtp",
+          "payload", G_TYPE_INT, self->pt_select, NULL);
       if (G_UNLIKELY (!gst_caps_can_intersect (caps, rtcp_caps))) {
         s = gst_caps_get_structure (caps, 0);
 
         /* This should not happened as rtpptchange drops buffers with wrong payload */
         GST_ERROR_OBJECT (self, "Received pt %d whereas pt-select equals %d.",
             g_value_get_int (gst_structure_get_value (s, "payload")),
-            self->select_pt);
+            self->pt_select);
 
         gst_caps_unref (rtcp_caps);
         gst_caps_unref (caps);
@@ -471,7 +540,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   GST_DEBUG_OBJECT (self, "New pad %s on rtpbin with caps %" GST_PTR_FORMAT, name, caps);
   g_free (name);
 
-  if (G_UNLIKELY (self->ignore_ssrc)) {
+  if (G_UNLIKELY (self->ssrc_change)) {
     GST_DEBUG_OBJECT (self, "SSRC ignored, reconnecting on last pad.");
     if (self->n_rtpbin_pads != 1) {
       /* which one should be reconnected; cannot determine atm */
@@ -484,7 +553,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
     }
   }
 
-  if (G_UNLIKELY (self->ignore_pt)){
+  if (G_UNLIKELY (self->pt_change)){
     GstCaps *caps = gst_rtp_src_request_pt_map(NULL, 0, 96, self);
     GstElement *filter = gst_element_factory_make ("capsfilter", NULL);
     GstPad *sinkpad;
@@ -512,7 +581,6 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   gst_pad_set_active (self->ghostpad, TRUE);
   gst_element_add_pad (GST_ELEMENT (self), self->ghostpad);
 
-  /* we don't expect any more pads */
   /* FIXME: check what happens when there are multiple pads added */
   gst_element_no_more_pads (GST_ELEMENT (self));
 
@@ -538,14 +606,14 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
   if (g_strcmp0 (encoding_name, "L16") == 0) {
     gst_caps_set_simple (ret,
         "clock-rate", G_TYPE_INT, 48000,
-        "encoding-name", G_TYPE_STRING, "L16", 
+        "encoding-name", G_TYPE_STRING, "L16",
         "channels", G_TYPE_INT, 2, NULL);
   }
   if (g_strcmp0 (encoding_name, "MP4A-LATM") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "audio",
         "clock-rate", G_TYPE_INT, 48000,
-        "encoding-name", G_TYPE_STRING, "MP4A-LATM", 
+        "encoding-name", G_TYPE_STRING, "MP4A-LATM",
         "channels", G_TYPE_INT, 2, NULL);
   }
   if (g_strcmp0 (encoding_name, "RAW-RGB24") == 0) {
@@ -655,9 +723,25 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
     rtpsrc->rtpdecrypt = gst_element_factory_make ("rtpdecrypt", NULL);
     g_return_val_if_fail (rtpsrc->rtpdecrypt != NULL, FALSE);
   }
-  if (rtpsrc->select_pt > -1) {
+
+  if (G_UNLIKELY(rtpsrc->pt_select > 0) ||
+      G_UNLIKELY(rtpsrc->pt_change > 0) ||
+      G_UNLIKELY(rtpsrc->ssrc_select > 0) ||
+      G_UNLIKELY(rtpsrc->ssrc_change > 0)) {
+    GST_LOG_OBJECT(rtpsrc, "Inserting rtpptchange PT (select %u, change %u), SSRC (select %u, change %u)",
+        rtpsrc->pt_select,
+        rtpsrc->pt_change,
+        rtpsrc->ssrc_select,
+        rtpsrc->ssrc_change
+        );
     rtpsrc->rtpptchange = gst_element_factory_make ("rtpptchange", NULL);
     g_return_val_if_fail (rtpsrc->rtpptchange != NULL, FALSE);
+    g_object_set (G_OBJECT (rtpsrc->rtpptchange),
+        "pt-select", rtpsrc->pt_select,
+        "pt-change", rtpsrc->pt_change,
+        "ssrc-select", rtpsrc->ssrc_select,
+        "ssrc-change", rtpsrc->ssrc_change,
+        NULL);
   }
 
   /* Set properties */
@@ -686,10 +770,10 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
           "port", rtpsrc->uri->port + 1, NULL);
     }
     g_object_set (G_OBJECT (rtpsrc->rtcp_src),
-        "multicast-iface", rtpsrc->multicast_iface, 
+        "multicast-iface", rtpsrc->multicast_iface,
         "close-socket", FALSE,
-        "buffer-size", rtpsrc->buffer_size, 
-        "auto-multicast", TRUE, 
+        "buffer-size", rtpsrc->buffer_size,
+        "auto-multicast", TRUE,
         NULL);
 
     /* auto-multicast should be set to false as rtcp_src will already
@@ -702,25 +786,22 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
         "async", FALSE,
         "buffer-size", rtpsrc->buffer_size,
         "multicast-iface", rtpsrc->multicast_iface,
-        "auto-multicast", FALSE, 
+        "auto-multicast", FALSE,
         "close-socket", FALSE,
         NULL);
   }
 
   g_object_set (G_OBJECT (rtpsrc->rtpbin),
-      "do-lost", TRUE, 
+      "do-lost", TRUE,
       "autoremove", TRUE,
-      "ignore-pt", rtpsrc->ignore_pt, 
-      "latency", rtpsrc->latency, 
+      "ignore-pt", rtpsrc->pt_change,
+      "latency", rtpsrc->latency,
       NULL);
 
   if (rtpsrc->encrypt)
     g_object_set (G_OBJECT (rtpsrc->rtpdecrypt), "rate",
         rtpsrc->key_derivation_rate, NULL);
 
-  if (rtpsrc->select_pt > -1)
-    g_object_set (G_OBJECT (rtpsrc->rtpptchange), "pt-select",
-        rtpsrc->select_pt, NULL);
 
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (rtpsrc), rtpsrc->rtp_src, rtpsrc->rtpbin, NULL);
@@ -732,7 +813,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
 
     lastelt = rtpsrc->rtpdecrypt;
   }
-  if (rtpsrc->select_pt > -1) {
+  if (rtpsrc->rtpptchange) {
     GST_DEBUG_OBJECT(rtpsrc, "Adding PT change");
     gst_bin_add (GST_BIN (rtpsrc), rtpsrc->rtpptchange);
     gst_element_link (lastelt, rtpsrc->rtpptchange);
@@ -762,7 +843,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
       GST_ERROR_OBJECT(rtpsrc, "Could not set RTP source to playing");
   if (rtpsrc->encrypt)
     gst_element_sync_state_with_parent (rtpsrc->rtpdecrypt);
-  if (rtpsrc->select_pt > -1)
+  if (rtpsrc->rtpptchange)
     gst_element_sync_state_with_parent (rtpsrc->rtpptchange);
   if(!gst_element_sync_state_with_parent (rtpsrc->rtpbin))
       GST_ERROR_OBJECT(rtpsrc, "Could not set RTP bin to playing");
@@ -837,15 +918,18 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->ghostpad = NULL;
   self->n_ptdemux_pads = 0;
   self->n_rtpbin_pads = 0;
-  self->select_pt = DEFAULT_SELECT_PT;
-  self->ignore_pt = DEFAULT_IGNORE_PT;
-  self->ignore_ssrc = DEFAULT_IGNORE_SSRC;
   self->enable_rtcp = DEFAULT_ENABLE_RTCP;
   self->multicast_iface = DEFAULT_PROP_MULTICAST_IFACE;
   self->buffer_size = DEFAULT_BUFFER_SIZE;
   self->latency = DEFAULT_LATENCY_MS;
   self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
   self->encrypt = DEFAULT_PROP_ENCRYPT;
+  self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
+  self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
+  self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
+  self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
+
+  self->rtpptchange = NULL;
 
   GST_DEBUG_OBJECT (self, "rtpsrc initialised");
 }

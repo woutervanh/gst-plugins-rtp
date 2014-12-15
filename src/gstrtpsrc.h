@@ -26,8 +26,10 @@ struct _GstRtpSrc
   SoupURI *uri, *rtcp_remote_uri;
   gchar *last_uri;
   gchar *encoding_name;
-  gboolean ignore_pt;
-  gboolean ignore_ssrc;
+  guint pt_select;
+  guint pt_change;
+  guint ssrc_select;
+  guint ssrc_change;
   gchar *multicast_iface;
   guint buffer_size;
   guint latency;
@@ -42,8 +44,6 @@ struct _GstRtpSrc
   GstElement *rtpbin;
   GstElement *rtpptchange;
   GstElement *rtpdecrypt;
-
-  gint select_pt;
 
   gint n_ptdemux_pads;
   gint n_rtpbin_pads;
