@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.0.0-17) vclub; urgency=medium
+
+  * rename rtpptchange to rtpheaderchange
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Wed, 17 Dec 2014 11:38:05 +0100
+
 gst-plugins-barcortp (1.0.0-16) vclub; urgency=low
 
   * rebuild with standardise pt/ssrc change/select

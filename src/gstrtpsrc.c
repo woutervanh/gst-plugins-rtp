@@ -369,29 +369,29 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       break;
     case PROP_PT_CHANGE:
       self->pt_change = g_value_get_uint (value);
-      if (self->rtpptchange)
-        g_object_set (G_OBJECT (self->rtpptchange), "pt-change", self->pt_change,
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "pt-change", self->pt_change,
             NULL);
       GST_DEBUG_OBJECT (self, "set pt change: %u", self->pt_change);
       break;
     case PROP_PT_SELECT:
       self->pt_select = g_value_get_uint (value);
-      if (self->rtpptchange)
-        g_object_set (G_OBJECT (self->rtpptchange), "pt-select",
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "pt-select",
             self->pt_select, NULL);
       GST_DEBUG_OBJECT (self, "set pt select: %u", self->pt_select);
       break;
     case PROP_SSRC_CHANGE:
       self->ssrc_change = g_value_get_uint (value);
-      if (self->rtpptchange)
-        g_object_set (G_OBJECT (self->rtpptchange), "ssrc-change", self->ssrc_change,
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "ssrc-change", self->ssrc_change,
             NULL);
       GST_DEBUG_OBJECT (self, "set ssrc change: %u", self->ssrc_change);
       break;
     case PROP_SSRC_SELECT:
       self->ssrc_select = g_value_get_uint (value);
-      if (self->rtpptchange)
-        g_object_set (G_OBJECT (self->rtpptchange), "ssrc-select", self->ssrc_select,
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "ssrc-select", self->ssrc_select,
             NULL);
       GST_DEBUG_OBJECT (self, "set ssrc select: %u", self->ssrc_select);
       break;
@@ -497,7 +497,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
       if (G_UNLIKELY (!gst_caps_can_intersect (caps, rtcp_caps))) {
         s = gst_caps_get_structure (caps, 0);
 
-        /* This should not happened as rtpptchange drops buffers with wrong SSRC*/
+        /* This should not happened as rtpheaderchange drops buffers with wrong SSRC*/
         GST_ERROR_OBJECT (self, "Received SSRC %d whereas ssrc-select equals %d.",
             g_value_get_int (gst_structure_get_value (s, "ssrc")),
             self->ssrc_select);
@@ -516,7 +516,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
       if (G_UNLIKELY (!gst_caps_can_intersect (caps, rtcp_caps))) {
         s = gst_caps_get_structure (caps, 0);
 
-        /* This should not happened as rtpptchange drops buffers with wrong payload */
+        /* This should not happened as rtpheaderchange drops buffers with wrong payload */
         GST_ERROR_OBJECT (self, "Received pt %d whereas pt-select equals %d.",
             g_value_get_int (gst_structure_get_value (s, "payload")),
             self->pt_select);
@@ -728,15 +728,15 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
       G_UNLIKELY(rtpsrc->pt_change > 0) ||
       G_UNLIKELY(rtpsrc->ssrc_select > 0) ||
       G_UNLIKELY(rtpsrc->ssrc_change > 0)) {
-    GST_LOG_OBJECT(rtpsrc, "Inserting rtpptchange PT (select %u, change %u), SSRC (select %u, change %u)",
+    GST_LOG_OBJECT(rtpsrc, "Inserting rtpheaderchange PT (select %u, change %u), SSRC (select %u, change %u)",
         rtpsrc->pt_select,
         rtpsrc->pt_change,
         rtpsrc->ssrc_select,
         rtpsrc->ssrc_change
         );
-    rtpsrc->rtpptchange = gst_element_factory_make ("rtpptchange", NULL);
-    g_return_val_if_fail (rtpsrc->rtpptchange != NULL, FALSE);
-    g_object_set (G_OBJECT (rtpsrc->rtpptchange),
+    rtpsrc->rtpheaderchange = gst_element_factory_make ("rtpheaderchange", NULL);
+    g_return_val_if_fail (rtpsrc->rtpheaderchange != NULL, FALSE);
+    g_object_set (G_OBJECT (rtpsrc->rtpheaderchange),
         "pt-select", rtpsrc->pt_select,
         "pt-change", rtpsrc->pt_change,
         "ssrc-select", rtpsrc->ssrc_select,
@@ -813,11 +813,11 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
 
     lastelt = rtpsrc->rtpdecrypt;
   }
-  if (rtpsrc->rtpptchange) {
+  if (rtpsrc->rtpheaderchange) {
     GST_DEBUG_OBJECT(rtpsrc, "Adding PT change");
-    gst_bin_add (GST_BIN (rtpsrc), rtpsrc->rtpptchange);
-    gst_element_link (lastelt, rtpsrc->rtpptchange);
-    lastelt = rtpsrc->rtpptchange;
+    gst_bin_add (GST_BIN (rtpsrc), rtpsrc->rtpheaderchange);
+    gst_element_link (lastelt, rtpsrc->rtpheaderchange);
+    lastelt = rtpsrc->rtpheaderchange;
   }
   gst_element_link_pads (lastelt, "src", rtpsrc->rtpbin, "recv_rtp_sink_0");
 
@@ -843,8 +843,8 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
       GST_ERROR_OBJECT(rtpsrc, "Could not set RTP source to playing");
   if (rtpsrc->encrypt)
     gst_element_sync_state_with_parent (rtpsrc->rtpdecrypt);
-  if (rtpsrc->rtpptchange)
-    gst_element_sync_state_with_parent (rtpsrc->rtpptchange);
+  if (rtpsrc->rtpheaderchange)
+    gst_element_sync_state_with_parent (rtpsrc->rtpheaderchange);
   if(!gst_element_sync_state_with_parent (rtpsrc->rtpbin))
       GST_ERROR_OBJECT(rtpsrc, "Could not set RTP bin to playing");
 
@@ -929,7 +929,7 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
 
-  self->rtpptchange = NULL;
+  self->rtpheaderchange = NULL;
 
   GST_DEBUG_OBJECT (self, "rtpsrc initialised");
 }

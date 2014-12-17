@@ -42,7 +42,7 @@ struct _GstRtpSrc
   GstElement *rtcp_src;
   GstElement *rtcp_sink;
   GstElement *rtpbin;
-  GstElement *rtpptchange;
+  GstElement *rtpheaderchange;
   GstElement *rtpdecrypt;
 
   gint n_ptdemux_pads;
