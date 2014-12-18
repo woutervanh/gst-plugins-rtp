@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.4-1) vclub; urgency=low
+
+  * bump version to be more in sync with gstreamer upstream
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Thu, 18 Dec 2014 13:15:46 +0000
+
 gst-plugins-barcortp (1.0.0-17) vclub; urgency=medium
 
   * rename rtpptchange to rtpheaderchange
