@@ -545,13 +545,15 @@ gst_rtp_sink_start (GstRtpSink * rtpsink)
   /** The order of these lines is really important **/
   /* First we update the state of rtcp_src so that it creates a socket and
    * binds on the port rtpsink->uri->port + 1 */
-  gst_element_sync_state_with_parent (rtpsink->rtcp_src);
+  if(!gst_element_sync_state_with_parent (rtpsink->rtcp_src))
+      GST_ERROR_OBJECT(rtpsink, "Could not set RTCP source to playing");
   /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
   gst_rtp_sink_retrieve_rtcp_src_socket (rtpsink);
   g_object_set (G_OBJECT (rtpsink->rtcp_sink), "socket",
       rtpsink->rtcp_src_socket, NULL);
   /* And we sync the state of rtcp_sink */
-  gst_element_sync_state_with_parent (rtpsink->rtcp_sink);
+  if(!gst_element_sync_state_with_parent (rtpsink->rtcp_sink))
+    GST_ERROR_OBJECT(rtpsink, "Could not set RTCP sink to playing");
 
   return TRUE;
 }
