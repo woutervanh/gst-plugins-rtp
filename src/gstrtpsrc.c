@@ -30,6 +30,7 @@ enum
   PROP_BUFFER_SIZE,
   PROP_ENCRYPT,
   PROP_KEY_DERIV_RATE,
+  PROP_TIMEOUT,
   PROP_LAST
 };
 
@@ -41,6 +42,7 @@ enum
 #define DEFAULT_PROP_MULTICAST_IFACE 	(NULL)
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
+#define DEFAULT_PROP_TIMEOUT          (0)
 
 /* 0 size means just pass the buffer along */
 #define GST_RTPPTCHANGE_DEFAULT_PT_NUMBER (0)
@@ -162,6 +164,19 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
       g_param_spec_uint ("buffer-size", "Kernel receive buffer size",
           "Size of the kernel receive buffer in bytes, 0=default", 0, G_MAXUINT,
           DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::timeout
+   *
+   * UDP timeout value
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_TIMEOUT,
+      g_param_spec_uint64 ("timeout", "Timeout",
+          "Post a message after timeout microseconds (0 = disabled)", 0,
+          G_MAXUINT64, DEFAULT_PROP_TIMEOUT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::encrypt
@@ -367,6 +382,10 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         g_object_set (G_OBJECT (self->rtpdecrypt), "rate",
             self->key_derivation_rate, NULL);
       break;
+    case PROP_TIMEOUT:
+      self->timeout = g_value_get_uint64 (value);
+      xgst_barco_propagate_setting (self, "timeout", self->timeout);
+      break;
     case PROP_PT_CHANGE:
       self->pt_change = g_value_get_uint (value);
       if (self->rtpheaderchange)
@@ -439,6 +458,9 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
       break;
     case PROP_KEY_DERIV_RATE:
       g_value_set_uint (value, self->key_derivation_rate);
+      break;
+    case PROP_TIMEOUT:
+      g_value_set_uint64 (value, self->timeout);
       break;
     case PROP_PT_CHANGE:
       g_value_set_uint (value, self->pt_change);
@@ -640,6 +662,7 @@ gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id, guint pt,
   if (rtpsrc->encoding_name)
     goto dynamic;
 
+  i = 0;
   while (RTP_STATIC_PARAMETERS[i].pt >= 0) {
     p = &(RTP_STATIC_PARAMETERS[i++]);
     if (p->pt == pt) {
@@ -672,6 +695,16 @@ dynamic:
     if (g_strcmp0 (p->encoding_name, rtpsrc->encoding_name) == 0) {
       GST_DEBUG_OBJECT (rtpsrc, "found static parameters [%s]",
           rtpsrc->encoding_name);
+      goto beach;
+    }
+  }
+  i = 0;
+  /* this is really desperate, some encoders claim to be a, while they
+   * are being b (Bosch). */
+  while (RTP_STATIC_PARAMETERS[i].pt >= 0) {
+    p = &(RTP_STATIC_PARAMETERS[i++]);
+    if (p->pt == pt) {
+      GST_DEBUG_OBJECT (rtpsrc, "found as static param: %s", p->encoding_name);
       goto beach;
     }
   }
@@ -755,6 +788,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
 
   g_object_set (G_OBJECT (rtpsrc->rtp_src),
       "reuse", TRUE,
+      "timeout", rtpsrc->timeout,
       "multicast-iface", rtpsrc->multicast_iface,
       "buffer-size", rtpsrc->buffer_size, "auto-multicast", TRUE, NULL);
 
@@ -773,6 +807,7 @@ gst_rtp_src_start (GstRtpSrc * rtpsrc)
         "multicast-iface", rtpsrc->multicast_iface,
         "close-socket", FALSE,
         "buffer-size", rtpsrc->buffer_size,
+        "timeout", rtpsrc->timeout,
         "auto-multicast", TRUE,
         NULL);
 
@@ -922,6 +957,7 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->multicast_iface = DEFAULT_PROP_MULTICAST_IFACE;
   self->buffer_size = DEFAULT_BUFFER_SIZE;
   self->latency = DEFAULT_LATENCY_MS;
+  self->timeout = DEFAULT_PROP_TIMEOUT;
   self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
   self->encrypt = DEFAULT_PROP_ENCRYPT;
   self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;

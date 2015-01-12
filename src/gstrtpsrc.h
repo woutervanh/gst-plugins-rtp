@@ -35,6 +35,7 @@ struct _GstRtpSrc
   guint latency;
   gboolean encrypt;
   guint32 key_derivation_rate;
+  guint64 timeout;
 
   gboolean enable_rtcp;
 
