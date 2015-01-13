@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.4-2) vclub; urgency=low
+
+  * rtpsrc: expose timeout value
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 13 Jan 2015 15:58:00 +0000
+
 gst-plugins-barcortp (1.4.4-1) vclub; urgency=low
 
   * bump version to be more in sync with gstreamer upstream
