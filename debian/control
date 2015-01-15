@@ -1,25 +1,25 @@
-Source: gst-plugins-barcortp@GST_ABI@
+Source: gst-plugins-barcortp1.0
 Section: libs
 Priority: optional
 Maintainer: Maintainers of GStreamer packages <pkg-gstreamer-maintainers@lists.alioth.debian.org>
 Uploaders: Loic Minier <lool@dooz.org>,
            Sebastian Dröge <slomo@debian.org>,
            Sjoerd Simons <sjoerd@debian.org>
-Build-Depends: @GST_LIB_DEV_DEP@, @GST_EXTRA_BUILD_DEPENDS@, libgstreamer-plugins-base@GST_ABI@-dev (>= 1.4.0), autotools-dev, dh-autoreconf, automake (>= 1.11), autoconf (>= 2.62), libtool (>= 2.2.6), autopoint (>= 0.17), cdbs (>= 0.4.93), debhelper (>= 9), dpkg-dev (>= 1.15.1), pkg-config (>= 0.11.0), gtk-doc-tools (>= 1.12), libglib2.0-dev (>= 2.32), gstreamer@GST_ABI@-plugins-base (>= 1.4.0), gstreamer@GST_ABI@-doc
+Build-Depends: libgstreamer1.0-dev (>= 1.4.0), , libgstreamer-plugins-base1.0-dev (>= 1.4.0), autotools-dev, dh-autoreconf, automake (>= 1.11), autoconf (>= 2.62), libtool (>= 2.2.6), autopoint (>= 0.17), cdbs (>= 0.4.93), debhelper (>= 9), dpkg-dev (>= 1.15.1), pkg-config (>= 0.11.0), gtk-doc-tools (>= 1.12), libglib2.0-dev (>= 2.32), gstreamer1.0-plugins-base (>= 1.4.0), gstreamer1.0-doc
 Standards-Version: 3.9.3
-Vcs-Git: git://anonscm.debian.org/pkg-gstreamer/gst-plugins-barcortp@GST_ABI@.git
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-gstreamer/gst-plugins-barcortp@GST_ABI@.git;a=summary
+Vcs-Git: git://anonscm.debian.org/pkg-gstreamer/gst-plugins-barcortp1.0.git
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-gstreamer/gst-plugins-barcortp1.0.git;a=summary
 Homepage: http://gstreamer.freedesktop.org/modules/gst-plugins-barcortp.html
 
-Package: @GST_PKGNAME@-plugins-barcortp
+Package: gstreamer1.0-plugins-barcortp
 Architecture: any
 Multi-Arch: same
 Section: libs
 Depends: ${misc:Depends},
          ${shlibs:Depends},
-         @GST_PKGNAME@-pulseaudio | @GST_PKGNAME@-audiosink,
-         gstreamer@GST_ABI@-plugins-base,
-Recommends: @GST_PKGNAME@-x
+         gstreamer1.0-pulseaudio | gstreamer1.0-audiosink,
+         gstreamer1.0-plugins-base,
+Recommends: gstreamer1.0-x
 Replaces: gstreamer1.0-plugins-bad (<< 1.1.2)
 Breaks: gstreamer1.0-plugins-bad (<< 1.1.2)
 XB-GStreamer-Version: ${gstreamer:Version}
@@ -40,13 +40,13 @@ Description: GStreamer plugins from the "barcortp" set
  This package contains the GStreamer plugins from the "barcortp" set, a set
  of barcortp-quality plug-ins under the LGPL license.
 
-Package: @GST_PKGNAME@-plugins-barcortp-dbg
+Package: gstreamer1.0-plugins-barcortp-dbg
 Architecture: any
 Multi-Arch: same
 Section: debug
 Priority: extra
-Depends: @GST_PKGNAME@-plugins-barcortp (= ${binary:Version}),
-         @GST_PKGNAME@-pulseaudio (= ${binary:Version}),
+Depends: gstreamer1.0-plugins-barcortp (= ${binary:Version}),
+         gstreamer1.0-pulseaudio (= ${binary:Version}),
          ${misc:Depends}
 Replaces: gstreamer1.0-plugins-bad (<< 1.1.2)
 Breaks: gstreamer1.0-plugins-bad (<< 1.1.2)
