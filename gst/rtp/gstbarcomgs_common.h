@@ -16,7 +16,7 @@
 #endif
 
 #include <gst/gst.h>
-#include <libsoup/soup.h>
+#include <gst/gsturi.h>
 #include <gst/rtp/gstrtppayloads.h>
 
 #define xgst_barco_set_supported_parameter(element, name, val) \
@@ -41,7 +41,6 @@
   }
 
 gboolean gst_barco_query_to_boolean(gchar * value);
-gboolean gst_barco_is_ipv4(SoupURI *uri);
-void gst_barco_parse_uri (GObject * obj, SoupURI * uri, GstDebugCategory * cat);
+void gst_barco_parse_uri (GObject * obj, GstUri* uri, GstDebugCategory * cat);
 
 #endif

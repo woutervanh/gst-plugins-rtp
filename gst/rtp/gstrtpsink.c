@@ -162,80 +162,79 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
 }
 
 static gboolean
-gst_rtp_sink_create_and_bind_rtp_socket (GstRtpSink * rtpsink)
+gst_rtp_sink_create_and_bind_rtp_socket (GstRtpSink * self)
 {
   GError *err = NULL;
   GInetAddress *bind_addr;
   GSocketAddress *bind_saddr;
 
-  if (0 == rtpsink->src_port) {
-    GST_INFO_OBJECT (rtpsink, "src-port is set to 0 => Don't bind");
+  if (0 == self->src_port) {
+    GST_INFO_OBJECT (self, "src-port is set to 0 => Don't bind");
     return FALSE;
   }
 
-  GST_DEBUG_OBJECT (rtpsink, "Create rtp_sink socket");
+  GST_DEBUG_OBJECT (self, "Create rtp_sink socket");
 
   /* create sender sockets try IPV6, fall back to IPV4 */
-  if ((rtpsink->rtp_sink_socket =
+  if ((self->rtp_sink_socket =
           g_socket_new (G_SOCKET_FAMILY_IPV6,
               G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &err)) == NULL) {
-    if ((rtpsink->rtp_sink_socket = g_socket_new (G_SOCKET_FAMILY_IPV4,
+    if ((self->rtp_sink_socket = g_socket_new (G_SOCKET_FAMILY_IPV4,
                 G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &err)) == NULL)
       goto no_socket;
   }
 
   /* Allow broadcast on sockets */
-  g_socket_set_broadcast (rtpsink->rtp_sink_socket, TRUE);
+  g_socket_set_broadcast (self->rtp_sink_socket, TRUE);
 
-  GST_DEBUG_OBJECT (rtpsink, "Bind rtp_sink socket on port %d",
-      rtpsink->src_port);
+  GST_DEBUG_OBJECT (self, "Bind rtp_sink socket on port %d", self->src_port);
 
   /*  */
-  if (G_SOCKET_FAMILY_IPV6 == g_socket_get_family (rtpsink->rtp_sink_socket))
+  if (G_SOCKET_FAMILY_IPV6 == g_socket_get_family (self->rtp_sink_socket))
     bind_addr = g_inet_address_new_from_string (LOCAL_ADDRESS_IPV6);
   else
     bind_addr = g_inet_address_new_from_string (LOCAL_ADDRESS_IPV4);
 
-  bind_saddr = g_inet_socket_address_new (bind_addr, rtpsink->src_port);
+  bind_saddr = g_inet_socket_address_new (bind_addr, self->src_port);
 
-  if (!g_socket_bind (rtpsink->rtp_sink_socket, bind_saddr, TRUE, &err))
+  if (!g_socket_bind (self->rtp_sink_socket, bind_saddr, TRUE, &err))
     goto no_bind;
 
-  GST_DEBUG_OBJECT (rtpsink->rtp_sink,
+  GST_DEBUG_OBJECT (self->rtp_sink,
       "RTP UDP sink has sock %p which binds on port %d",
-      rtpsink->rtp_sink_socket, rtpsink->src_port);
+      self->rtp_sink_socket, self->src_port);
 
   return TRUE;
 
   /* ERRORS */
 no_socket:
   {
-    GST_ELEMENT_ERROR ((GstElement *) rtpsink, RESOURCE, FAILED, (NULL),
+    GST_ELEMENT_ERROR ((GstElement *) self, RESOURCE, FAILED, (NULL),
         ("Could not create sockets: %s", err->message));
     g_clear_error (&err);
     return FALSE;
   }
 no_bind:
   {
-    GST_ELEMENT_WARNING (rtpsink, RESOURCE, SETTINGS, (NULL),
+    GST_ELEMENT_WARNING (self, RESOURCE, SETTINGS, (NULL),
         ("Could not bind socket: %s (%d)", err->message, err->code));
     g_clear_error (&err);
-    g_object_unref (rtpsink->rtp_sink_socket);
+    g_object_unref (self->rtp_sink_socket);
     return FALSE;
   }
 }
 
 static void
-gst_rtp_sink_retrieve_rtcp_src_socket (GstRtpSink * rtpsink)
+gst_rtp_sink_retrieve_rtcp_src_socket (GstRtpSink * self)
 {
-  if (NULL == rtpsink->rtcp_src_socket) {
-    g_object_get (G_OBJECT (rtpsink->rtcp_src), "used-socket",
-        &(rtpsink->rtcp_src_socket), NULL);
-    if (!G_IS_SOCKET (rtpsink->rtcp_src_socket))
-      GST_WARNING_OBJECT (rtpsink, "No valid socket retrieved from udpsrc");
+  if (NULL == self->rtcp_src_socket) {
+    g_object_get (G_OBJECT (self->rtcp_src), "used-socket",
+        &(self->rtcp_src_socket), NULL);
+    if (!G_IS_SOCKET (self->rtcp_src_socket))
+      GST_WARNING_OBJECT (self, "No valid socket retrieved from udpsrc");
     else
-      GST_DEBUG_OBJECT (rtpsink->rtcp_sink, "RTCP UDP src has sock %p",
-          rtpsink->rtcp_src_socket);
+      GST_DEBUG_OBJECT (self->rtcp_sink, "RTCP UDP src has sock %p",
+          self->rtcp_src_socket);
   }
 }
 
@@ -253,10 +252,10 @@ close_and_unref_socket (GSocket * socket)
 }
 
 static void
-gst_rtp_sink_check_uri (GstRtpSink * rtpsink)
+gst_rtp_sink_check_uri (GstRtpSink * self)
 {
-  if (rtpsink->uri) {
-    gst_barco_parse_uri (G_OBJECT (rtpsink), rtpsink->uri, GST_CAT_DEFAULT);
+  if (self->uri) {
+    gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
   }
 }
 
@@ -264,34 +263,34 @@ static void
 gst_rtp_sink_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
-  GstRtpSink *rtpsink = GST_RTP_SINK (object);
+  GstRtpSink *self = GST_RTP_SINK (object);
 
   switch (prop_id) {
     case PROP_URI:
-      if (rtpsink->uri)
-        soup_uri_free (rtpsink->uri);
-      rtpsink->uri = soup_uri_new (g_value_get_string (value));
-      gst_rtp_sink_check_uri (rtpsink);
+      if (self->uri)
+        gst_object_unref (self->uri);
+      self->uri = gst_uri_from_string (g_value_get_string (value));
+      gst_rtp_sink_check_uri (self);
       break;
     case PROP_TTL:
-      rtpsink->ttl = g_value_get_int (value);
+      self->ttl = g_value_get_int (value);
       break;
     case PROP_TTL_MC:
-      rtpsink->ttl_mc = g_value_get_int (value);
+      self->ttl_mc = g_value_get_int (value);
       break;
     case PROP_SRC_PORT:
-      rtpsink->src_port = g_value_get_int (value);
-      close_and_unref_socket (rtpsink->rtp_sink_socket);
-      gst_rtp_sink_create_and_bind_rtp_socket (rtpsink);
+      self->src_port = g_value_get_int (value);
+      close_and_unref_socket (self->rtp_sink_socket);
+      gst_rtp_sink_create_and_bind_rtp_socket (self);
       break;
     case PROP_ENCRYPT:
-      rtpsink->encrypt = g_value_get_boolean (value);
+      self->encrypt = g_value_get_boolean (value);
       break;
     case PROP_KEY_DERIV_RATE:
-      rtpsink->key_derivation_rate = g_value_get_uint (value);
-      if (rtpsink->rtpencrypt)
-        g_object_set (G_OBJECT (rtpsink->rtpencrypt), "rate",
-            rtpsink->key_derivation_rate, NULL);
+      self->key_derivation_rate = g_value_get_uint (value);
+      if (self->rtpencrypt)
+        g_object_set (G_OBJECT (self->rtpencrypt), "rate",
+            self->key_derivation_rate, NULL);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -303,12 +302,12 @@ static void
 gst_rtp_sink_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec)
 {
-  GstRtpSink *rtpsink = GST_RTP_SINK (object);
+  GstRtpSink *self = GST_RTP_SINK (object);
 
   switch (prop_id) {
     case PROP_URI:
-      if (rtpsink->uri) {
-        gchar *string = soup_uri_to_string (rtpsink->uri, FALSE);
+      if (self->uri) {
+        gchar *string = gst_uri_to_string (self->uri);
 
         g_value_set_string (value, string);
         g_free (string);
@@ -317,19 +316,19 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
       }
       break;
     case PROP_TTL:
-      g_value_set_int (value, rtpsink->ttl);
+      g_value_set_int (value, self->ttl);
       break;
     case PROP_TTL_MC:
-      g_value_set_int (value, rtpsink->ttl_mc);
+      g_value_set_int (value, self->ttl_mc);
       break;
     case PROP_SRC_PORT:
-      g_value_set_int (value, rtpsink->src_port);
+      g_value_set_int (value, self->src_port);
       break;
     case PROP_ENCRYPT:
-      g_value_set_boolean (value, rtpsink->encrypt);
+      g_value_set_boolean (value, self->encrypt);
       break;
     case PROP_KEY_DERIV_RATE:
-      g_value_set_uint (value, rtpsink->key_derivation_rate);
+      g_value_set_uint (value, self->key_derivation_rate);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -341,16 +340,16 @@ static void
 gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
     GstPad * pad, gpointer data)
 {
-  GstRtpSink *rtpsink = GST_RTP_SINK (data);
+  GstRtpSink *self = GST_RTP_SINK (data);
   GstElement *elt;
   GstPad *target;
   GstCaps *caps;
   gchar *name;
 
   if (GST_PAD_DIRECTION (pad) == GST_PAD_SINK) {
-    GST_DEBUG_OBJECT (rtpsink, "not interested in sink pads");
+    GST_DEBUG_OBJECT (self, "not interested in sink pads");
     caps = gst_pad_query_caps (pad, NULL);
-    GST_DEBUG_OBJECT (rtpsink, "caps are %" GST_PTR_FORMAT, caps);
+    GST_DEBUG_OBJECT (self, "caps are %" GST_PTR_FORMAT, caps);
     gst_caps_unref (caps);
     return;
   }
@@ -360,7 +359,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
     GstCaps *rtcp_caps = gst_caps_new_empty_simple ("application/x-rtcp");
 
     if (gst_caps_can_intersect (caps, rtcp_caps)) {
-      GST_DEBUG_OBJECT (rtpsink, "not interested in pad with rtcp caps");
+      GST_DEBUG_OBJECT (self, "not interested in pad with rtcp caps");
       gst_caps_unref (rtcp_caps);
       gst_caps_unref (caps);
       return;
@@ -369,18 +368,18 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
     gst_caps_unref (caps);
   }
 
-  elt = (rtpsink->encrypt) ? rtpsink->rtpencrypt : rtpsink->rtp_sink;
+  elt = (self->encrypt) ? self->rtpencrypt : self->rtp_sink;
 
   target = gst_element_get_static_pad (elt, "sink");
   if (gst_pad_is_linked (target)) {
-    GST_WARNING_OBJECT (rtpsink,
+    GST_WARNING_OBJECT (self,
         "new pad on rtpbin, but there was already a src pad");
     gst_object_unref (target);
     return;
   }
 
   name = gst_element_get_name (elt);
-  GST_DEBUG_OBJECT (rtpsink, "linking new rtpbin src pad to %s sink pad", name);
+  GST_DEBUG_OBJECT (self, "linking new rtpbin src pad to %s sink pad", name);
   g_free (name);
   gst_pad_link (pad, target);
   gst_object_unref (target);
@@ -431,12 +430,12 @@ gst_rtp_sink_rtp_bin_event (GstPad * pad, GstObject * parent, GstEvent * event)
 
 #define gst_rtp_sink_find_property(property, value) \
   if (g_object_class_find_property (G_OBJECT_GET_CLASS (new_element), property)){ \
-    GST_DEBUG_OBJECT(rtpsink, "element supports " property); \
+    GST_DEBUG_OBJECT(self, "element supports " property); \
     g_object_set (G_OBJECT(new_element), property, value, NULL); \
   }
 
 static void
-gst_rtp_sink_rtpsink_element_added (GstRtpSink * rtpsink,
+gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
     GstElement * new_element, gpointer data)
 {
   g_return_if_fail (new_element != NULL);
@@ -446,60 +445,62 @@ gst_rtp_sink_rtpsink_element_added (GstRtpSink * rtpsink,
 }
 
 static gboolean
-gst_rtp_sink_start (GstRtpSink * rtpsink)
+gst_rtp_sink_start (GstRtpSink * self)
 {
   GstElement *rtpbin;
   GstPad *pad;
   GstCaps *caps = NULL;
   gchar *uri = NULL;
 
-  GST_DEBUG_OBJECT (rtpsink, "Creating correct modules");
+  GST_DEBUG_OBJECT (self, "Creating correct modules");
   rtpbin = gst_element_factory_make ("rtpbin", NULL);
-  rtpsink->rtp_sink = gst_element_factory_make ("udpsink", NULL);
-  rtpsink->rtcp_sink = gst_element_factory_make ("udpsink", NULL);
-  rtpsink->rtcp_src = gst_element_factory_make ("udpsrc", NULL);
+  self->rtp_sink = gst_element_factory_make ("udpsink", NULL);
+  self->rtcp_sink = gst_element_factory_make ("udpsink", NULL);
+  self->rtcp_src = gst_element_factory_make ("udpsrc", NULL);
 
   g_return_val_if_fail (rtpbin != NULL, FALSE);
-  g_return_val_if_fail (rtpsink->rtp_sink != NULL, FALSE);
-  g_return_val_if_fail (rtpsink->rtcp_sink != NULL, FALSE);
-  g_return_val_if_fail (rtpsink->rtcp_src != NULL, FALSE);
+  g_return_val_if_fail (self->rtp_sink != NULL, FALSE);
+  g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
+  g_return_val_if_fail (self->rtcp_src != NULL, FALSE);
 
-  if (rtpsink->encrypt) {
-    rtpsink->rtpencrypt = gst_element_factory_make ("rtpencrypt", NULL);
-    g_return_val_if_fail (rtpsink->rtpencrypt != NULL, FALSE);
-    g_object_set (G_OBJECT (rtpsink->rtpencrypt), "rate",
-        rtpsink->key_derivation_rate, NULL);
+  if (self->encrypt) {
+    self->rtpencrypt = gst_element_factory_make ("rtpencrypt", NULL);
+    g_return_val_if_fail (self->rtpencrypt != NULL, FALSE);
+    g_object_set (G_OBJECT (self->rtpencrypt), "rate",
+        self->key_derivation_rate, NULL);
   }
 
   /* Set properties */
-  g_object_set (G_OBJECT (rtpsink->rtp_sink),
+  g_object_set (G_OBJECT (self->rtp_sink),
       "async", FALSE,
-      "ttl", rtpsink->ttl,
-      "ttl-mc", rtpsink->ttl_mc,
-      "host", rtpsink->uri->host, "port", rtpsink->uri->port,
-      "socket", rtpsink->rtp_sink_socket, "auto-multicast", TRUE, NULL);
+      "ttl", self->ttl,
+      "ttl-mc", self->ttl_mc,
+      "host", gst_uri_get_host (self->uri), "port",
+      gst_uri_get_port (self->uri), "socket", self->rtp_sink_socket,
+      "auto-multicast", TRUE, NULL);
 
   /* auto-multicast should be set to false as rtcp_src will already
    * join the multicast group */
-  g_object_set (G_OBJECT (rtpsink->rtcp_sink),
+  g_object_set (G_OBJECT (self->rtcp_sink),
       "sync", FALSE,
       "async", FALSE,
-      "ttl", rtpsink->ttl,
-      "ttl-mc", rtpsink->ttl_mc,
-      "host", rtpsink->uri->host, "port", rtpsink->uri->port + 1,
-      "close-socket", FALSE, "auto-multicast", FALSE, NULL);
+      "ttl", self->ttl,
+      "ttl-mc", self->ttl_mc,
+      "host", gst_uri_get_host (self->uri), "port",
+      gst_uri_get_port (self->uri) + 1, "close-socket", FALSE, "auto-multicast",
+      FALSE, NULL);
 
-  if (gst_rtp_sink_is_multicast (rtpsink->uri->host)) {
+  if (gst_rtp_sink_is_multicast (gst_uri_get_host (self->uri))) {
     uri = g_strdup_printf ("udp://%s:%u",
-        rtpsink->uri->host, rtpsink->uri->port + 1);
-    g_object_set (G_OBJECT (rtpsink->rtcp_src), "uri", uri, NULL);
+        gst_uri_get_host (self->uri), gst_uri_get_port (self->uri) + 1);
+    g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
     g_free (uri);
   } else
-    g_object_set (G_OBJECT (rtpsink->rtcp_src), "port", rtpsink->uri->port + 1,
-        NULL);
+    g_object_set (G_OBJECT (self->rtcp_src), "port",
+        gst_uri_get_port (self->uri) + 1, NULL);
 
   caps = gst_caps_from_string ("application/x-rtcp");
-  g_object_set (G_OBJECT (rtpsink->rtcp_src),
+  g_object_set (G_OBJECT (self->rtcp_src),
       "caps", caps, "auto-multicast", TRUE, NULL);
   gst_caps_unref (caps);
 
@@ -507,53 +508,53 @@ gst_rtp_sink_start (GstRtpSink * rtpsink)
           "use-pipeline-clock")) {
     g_object_set (G_OBJECT (rtpbin), "use-pipeline-clock", TRUE, NULL);
   } else {
-    GST_WARNING_OBJECT (rtpsink,
+    GST_WARNING_OBJECT (self,
         "rtpbin has no use-pipeline-clock, running old version?");
   }
 
-  GST_DEBUG_OBJECT (rtpsink, "Connecting callbacks");
+  GST_DEBUG_OBJECT (self, "Connecting callbacks");
   g_signal_connect (rtpbin, "pad-added",
-      G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), rtpsink);
+      G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
   g_signal_connect (rtpbin, "element-added",
       G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
 
-  gst_bin_add_many (GST_BIN (rtpsink), rtpbin,
-      rtpsink->rtp_sink, rtpsink->rtcp_sink, rtpsink->rtcp_src, NULL);
+  gst_bin_add_many (GST_BIN (self), rtpbin,
+      self->rtp_sink, self->rtcp_sink, self->rtcp_src, NULL);
 
-  if (rtpsink->encrypt) {
-    gst_bin_add (GST_BIN (rtpsink), rtpsink->rtpencrypt);
-    gst_element_link (rtpsink->rtpencrypt, rtpsink->rtp_sink);
+  if (self->encrypt) {
+    gst_bin_add (GST_BIN (self), self->rtpencrypt);
+    gst_element_link (self->rtpencrypt, self->rtp_sink);
   }
 
   GST_DEBUG_OBJECT (rtpbin, "Connecting pads");
   pad = gst_element_get_request_pad (rtpbin, "send_rtp_sink_0");
-  gst_element_link_pads (rtpbin, "send_rtp_src_0", rtpsink->rtp_sink, "sink");
-  gst_element_link_pads (rtpbin, "send_rtcp_src_0", rtpsink->rtcp_sink, "sink");
-  gst_element_link_pads (rtpsink->rtcp_src, "src", rtpbin, "recv_rtcp_sink_0");
+  gst_element_link_pads (rtpbin, "send_rtp_src_0", self->rtp_sink, "sink");
+  gst_element_link_pads (rtpbin, "send_rtcp_src_0", self->rtcp_sink, "sink");
+  gst_element_link_pads (self->rtcp_src, "src", rtpbin, "recv_rtcp_sink_0");
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
 
-  GST_DEBUG_OBJECT (rtpsink, "Setting and connecting ghostpad");
-  gst_ghost_pad_set_target (GST_GHOST_PAD (rtpsink->sinkpad), pad);
+  GST_DEBUG_OBJECT (self, "Setting and connecting ghostpad");
+  gst_ghost_pad_set_target (GST_GHOST_PAD (self->sinkpad), pad);
   gst_object_unref (pad);
 
   gst_element_sync_state_with_parent (GST_ELEMENT (rtpbin));
-  if (rtpsink->encrypt)
-    gst_element_sync_state_with_parent (rtpsink->rtpencrypt);
-  gst_element_sync_state_with_parent (rtpsink->rtp_sink);
+  if (self->encrypt)
+    gst_element_sync_state_with_parent (self->rtpencrypt);
+  gst_element_sync_state_with_parent (self->rtp_sink);
 
   /** The order of these lines is really important **/
   /* First we update the state of rtcp_src so that it creates a socket and
-   * binds on the port rtpsink->uri->port + 1 */
-  if(!gst_element_sync_state_with_parent (rtpsink->rtcp_src))
-      GST_ERROR_OBJECT(rtpsink, "Could not set RTCP source to playing");
+   * binds on the port gst_uri_get_port(self->uri) + 1 */
+  if (!gst_element_sync_state_with_parent (self->rtcp_src))
+    GST_ERROR_OBJECT (self, "Could not set RTCP source to playing");
   /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
-  gst_rtp_sink_retrieve_rtcp_src_socket (rtpsink);
-  g_object_set (G_OBJECT (rtpsink->rtcp_sink), "socket",
-      rtpsink->rtcp_src_socket, NULL);
+  gst_rtp_sink_retrieve_rtcp_src_socket (self);
+  g_object_set (G_OBJECT (self->rtcp_sink), "socket",
+      self->rtcp_src_socket, NULL);
   /* And we sync the state of rtcp_sink */
-  if(!gst_element_sync_state_with_parent (rtpsink->rtcp_sink))
-    GST_ERROR_OBJECT(rtpsink, "Could not set RTCP sink to playing");
+  if (!gst_element_sync_state_with_parent (self->rtcp_sink))
+    GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
 
   return TRUE;
 }
@@ -561,13 +562,13 @@ gst_rtp_sink_start (GstRtpSink * rtpsink)
 static GstStateChangeReturn
 gst_rtp_sink_change_state (GstElement * element, GstStateChange transition)
 {
-  GstRtpSink *rtpsink = GST_RTP_SINK (element);
+  GstRtpSink *self = GST_RTP_SINK (element);
 
   switch (transition) {
     case GST_STATE_CHANGE_READY_TO_PAUSED:
-      GST_DEBUG_OBJECT (rtpsink, "Configuring rtpsink");
-      if (!gst_rtp_sink_start (rtpsink)) {
-        GST_DEBUG_OBJECT (rtpsink, "Start failed");
+      GST_DEBUG_OBJECT (self, "Configuring rtpsink");
+      if (!gst_rtp_sink_start (self)) {
+        GST_DEBUG_OBJECT (self, "Start failed");
         return GST_STATE_CHANGE_FAILURE;
       }
       break;
@@ -577,7 +578,7 @@ gst_rtp_sink_change_state (GstElement * element, GstStateChange transition)
       break;
     case GST_STATE_CHANGE_PAUSED_TO_READY:
     {
-      GST_DEBUG_OBJECT (rtpsink, "Shutting down");
+      GST_DEBUG_OBJECT (self, "Shutting down");
     }
       break;
     default:
@@ -590,31 +591,31 @@ gst_rtp_sink_change_state (GstElement * element, GstStateChange transition)
 static void
 gst_rtp_sink_finalize (GObject * gobject)
 {
-  GstRtpSink *rtpsink = GST_RTP_SINK (gobject);
+  GstRtpSink *self = GST_RTP_SINK (gobject);
 
-  if (rtpsink->uri)
-    soup_uri_free (rtpsink->uri);
+  if (self->uri)
+    gst_object_unref (self->uri);
 
   G_OBJECT_CLASS (parent_class)->finalize (gobject);
 }
 
 static void
-gst_rtp_sink_init (GstRtpSink * rtpsink)
+gst_rtp_sink_init (GstRtpSink * self)
 {
-  rtpsink->uri = soup_uri_new (DEFAULT_PROP_URI);
-  rtpsink->ttl = DEFAULT_PROP_TTL;
-  rtpsink->ttl_mc = DEFAULT_PROP_TTL_MC;
-  rtpsink->src_port = DEFAULT_SRC_PORT;
-  rtpsink->rtp_sink_socket = NULL;
-  rtpsink->rtcp_src_socket = NULL;
-  rtpsink->encrypt = DEFAULT_PROP_ENCRYPT;
-  rtpsink->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
+  self->uri = gst_uri_from_string (DEFAULT_PROP_URI);
+  self->ttl = DEFAULT_PROP_TTL;
+  self->ttl_mc = DEFAULT_PROP_TTL_MC;
+  self->src_port = DEFAULT_SRC_PORT;
+  self->rtp_sink_socket = NULL;
+  self->rtcp_src_socket = NULL;
+  self->encrypt = DEFAULT_PROP_ENCRYPT;
+  self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
 
-  rtpsink->sinkpad = gst_ghost_pad_new_no_target ("sink", GST_PAD_SINK);
-  gst_element_add_pad (GST_ELEMENT (rtpsink), rtpsink->sinkpad);
+  self->sinkpad = gst_ghost_pad_new_no_target ("sink", GST_PAD_SINK);
+  gst_element_add_pad (GST_ELEMENT (self), self->sinkpad);
 
-  GST_OBJECT_FLAG_SET (GST_OBJECT (rtpsink), GST_ELEMENT_FLAG_SINK);
-  GST_DEBUG_OBJECT (rtpsink, "rtpsink initialised");
+  GST_OBJECT_FLAG_SET (GST_OBJECT (self), GST_ELEMENT_FLAG_SINK);
+  GST_DEBUG_OBJECT (self, "rtpsink initialised");
 }
 
 gboolean
@@ -641,20 +642,20 @@ gst_rtp_sink_uri_get_protocols (GType type)
 static gchar *
 gst_rtp_sink_uri_get_uri (GstURIHandler * handler)
 {
-  GstRtpSink *rtpsink = (GstRtpSink *) handler;
+  GstRtpSink *self = (GstRtpSink *) handler;
 
-  rtpsink->last_uri = soup_uri_to_string (rtpsink->uri, FALSE);
+  self->last_uri = gst_uri_to_string (self->uri);
 
-  return rtpsink->last_uri;
+  return self->last_uri;
 }
 
 static gboolean
 gst_rtp_sink_uri_set_uri (GstURIHandler * handler, const gchar * uri,
     GError ** error)
 {
-  GstRtpSink *rtpsink = (GstRtpSink *) handler;
+  GstRtpSink *self = (GstRtpSink *) handler;
 
-  g_object_set (G_OBJECT (rtpsink), "uri", uri, NULL);
+  g_object_set (G_OBJECT (self), "uri", uri, NULL);
 
   return TRUE;
 }

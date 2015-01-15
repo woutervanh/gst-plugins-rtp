@@ -1,3 +1,9 @@
+gst-plugins-barcortp1.0 (1.4.5-1) vclub; urgency=medium
+
+  * Move to autotools to be more in line with GStreamer
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Thu, 15 Jan 2015 12:40:48 +0100
+
 gst-plugins-barcortp (1.4.4-1) vclub; urgency=low
 
   * bump version to be more in sync with gstreamer upstream
