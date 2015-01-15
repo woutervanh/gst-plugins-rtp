@@ -1,8 +1,15 @@
-gst-plugins-barcortp1.0 (1.4.5-1) vclub; urgency=medium
+gst-plugins-barcortp1.0 (1.4.5-2) vclub; urgency=medium
 
   * Move to autotools to be more in line with GStreamer
 
  -- Marc Leeman <marc.leeman@gmail.com>  Thu, 15 Jan 2015 12:40:48 +0100
+
+gst-plugins-barcortp (1.4.5-1) vclub; urgency=low
+
+  * rtpsrc: expose timeout value
+  * bump GST Version
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 13 Jan 2015 15:58:00 +0000
 
 gst-plugins-barcortp (1.4.4-1) vclub; urgency=low
 
