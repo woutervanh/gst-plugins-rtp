@@ -1,4 +1,1 @@
-@1394@
-debian/tmp/usr/share/gstreamer-@GST_ABI@/presets/
 debian/tmp/usr/lib/*/gstreamer-@GST_ABI@/libgstbarcortp.so
-debian/tmp/usr/share/locale

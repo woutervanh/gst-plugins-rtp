@@ -10,8 +10,8 @@ libgstbarcortp_la_SOURCES = \
 		gstrtpsrc.c 
 
 libgstbarcortp_la_CFLAGS = $(GST_PLUGINS_BARCORTP_CFLAGS) $(GST_BARCORTP_CFLAGS) $(GST_CFLAGS)
-libgstbarcortp_la_LIBADD = $(GST_BARCORTP_LIBS) $(BARCORTP_LIBS)
-libgstbarcortp_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) $(BARCORTP_LDFLAGS)
+libgstbarcortp_la_LIBADD = $(GST_PLUGINS_BASE_LIBS) $(GST_NET_LIBS)
+libgstbarcortp_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
 libgstbarcortp_la_LIBTOOLFLAGS = $(GST_PLUGIN_LIBTOOLFLAGS)
 
 # headers we need but don't want installed

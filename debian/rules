@@ -7,7 +7,7 @@ include /usr/share/cdbs/1/rules/autoreconf.mk
 
 DEB_BUILD_PARALLEL = 1
 
-DEB_DH_AUTORECONF_ARGS += --as-needed
+# DEB_DH_AUTORECONF_ARGS += --as-needed
 
 CFLAGS += -Wno-error
 CXXFLAGS += -Wno-error
@@ -134,11 +134,6 @@ DEB_CONFIGURE_EXTRA_FLAGS +=  --disable-tests \
 	--with-package-origin=$(GST_PACKAGE_ORIGIN) \
 	--enable-gtk-doc \
 	--enable-experimental \
-	--with-default-audiosink=$(DEFAULT_AUDIOSINK) \
-	--with-default-audiosrc=$(DEFAULT_AUDIOSRC) \
-	--with-default-videosink=$(DEFAULT_VIDEOSINK) \
-	--with-default-videosrc=$(DEFAULT_VIDEOSRC) \
-	--with-default-visualizer=$(DEFAULT_VISUALIZER) \
 	$(CONFIG_ARGS)
 
 clean::
@@ -154,7 +149,7 @@ clean::
 common-binary-fixup-arch::
 	dh_gstscancodecs
 
-DEB_INSTALL_DOCS_ALL += debian/README.Debian NEWS
+# DEB_INSTALL_DOCS_ALL += debian/README.Debian NEWS
 
 # Disable inclusion of large upstream ChangeLog
 DEB_INSTALL_CHANGELOGS_ALL :=
