@@ -267,8 +267,8 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
 
   switch (prop_id) {
     case PROP_URI:
-      /*if (self->uri) */
-      /*gst_object_unref (self->uri); */
+      if (self->uri)
+        gst_uri_unref (self->uri);
       self->uri = gst_uri_from_string (g_value_get_string (value));
       gst_rtp_sink_check_uri (self);
       break;
@@ -593,8 +593,8 @@ gst_rtp_sink_finalize (GObject * gobject)
 {
   GstRtpSink *self = GST_RTP_SINK (gobject);
 
-  /*if (self->uri) */
-  /*gst_object_unref (self->uri); */
+  if (self->uri)
+    gst_uri_unref (self->uri);
 
   G_OBJECT_CLASS (parent_class)->finalize (gobject);
 }
