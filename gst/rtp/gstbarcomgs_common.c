@@ -16,6 +16,7 @@
 #include <gst/gsturi.h>
 #include <gio/gio.h>
 #include <string.h>
+#include <gst/rtsp/gstrtsptransport.h>
 
 #include "gstbarcomgs_common.h"
 /** 
@@ -96,6 +97,10 @@ gst_barco_parse_uri (GObject * obj, GstUri * uri, GstDebugCategory * cat)
                   (gchar *) g_hash_table_lookup (hash_table, key->data));
               g_object_set (obj, key->data, caps, NULL);
               gst_caps_unref (caps);
+            } else if (spec->value_type == GST_TYPE_RTSP_LOWER_TRANS) {
+              GstRTSPLowerTrans protocols = (gint) g_ascii_strtoll ((gchar *)
+                  g_hash_table_lookup (hash_table, key->data), NULL, 0);
+              g_object_set (obj, key->data, protocols, NULL);
             } else {
               GST_CAT_WARNING_OBJECT (cat, obj,
                   "Unknown type or not yet supported: %s "
