@@ -1,21 +1,3 @@
-gst-plugins-barcortp1.0 (1.4.5-4) vclub; urgency=low
-
-  * GstUri: gst_uri_unref
-
- -- Marc Leeman <marc.leeman@barco.com>  Thu, 15 Jan 2015 14:44:07 +0000
-
-gst-plugins-barcortp1.0 (1.4.5-3) vclub; urgency=low
-
-  * do not unref GstUri elements now
-
- -- Marc Leeman <marc.leeman@barco.com>  Thu, 15 Jan 2015 14:35:15 +0000
-
-gst-plugins-barcortp1.0 (1.4.5-2) vclub; urgency=medium
-
-  * Move to autotools to be more in line with GStreamer
-
- -- Marc Leeman <marc.leeman@gmail.com>  Thu, 15 Jan 2015 12:40:48 +0100
-
 gst-plugins-barcortp (1.4.5-1) vclub; urgency=low
 
   * rtpsrc: expose timeout value
