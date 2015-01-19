@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-5) vclub; urgency=medium
+
+  * Reset master to working situation
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Mon, 19 Jan 2015 16:59:20 +0100
+
 gst-plugins-barcortp (1.4.5-1) vclub; urgency=low
 
   * rtpsrc: expose timeout value
