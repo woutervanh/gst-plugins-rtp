@@ -314,6 +314,9 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       if (self->uri)
         gst_uri_unref (self->uri);
       self->uri = gst_uri_from_string (g_value_get_string (value));
+      GST_DEBUG_OBJECT (self, "set uri: %s", g_value_get_string (value));
+      GST_DEBUG_OBJECT (self, "set uri: %s", gst_uri_to_string (self->uri));
+      GST_DEBUG_OBJECT (self, "set uri: %d", gst_uri_get_port (self->uri));
 
       gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
       if (self->rtp_src) {
@@ -336,8 +339,9 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         }
         g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
       }
-    }
+      GST_DEBUG_OBJECT (self, "set uri: %s", g_value_get_string (value));
       break;
+    }
     case PROP_ENCODING_NAME:
       if (self->encoding_name)
         g_free (self->encoding_name);
