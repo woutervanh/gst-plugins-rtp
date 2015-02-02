@@ -606,7 +606,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   gst_element_add_pad (GST_ELEMENT (self), self->ghostpad);
 
   /* FIXME: check what happens when there are multiple pads added */
-  gst_element_no_more_pads (GST_ELEMENT (self));
+  /*gst_element_no_more_pads (GST_ELEMENT (self));*/
 
   gst_object_unref (pad);
 }
