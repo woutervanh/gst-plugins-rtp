@@ -375,6 +375,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   if (gst_pad_is_linked (target)) {
     GST_WARNING_OBJECT (rtpsink,
         "new pad on rtpbin, but there was already a src pad");
+    gst_caps_unref (caps);
     gst_object_unref (target);
     return;
   }
@@ -384,6 +385,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   g_free (name);
   gst_pad_link (pad, target);
   gst_object_unref (target);
+  gst_caps_unref (caps);
 }
 
 static void

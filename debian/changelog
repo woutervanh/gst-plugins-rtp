@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-7) vclub; urgency=low
+
+  * remove rtp caps leak
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 12 Feb 2015 15:12:12 +0000
+
 gst-plugins-barcortp (1.4.5-6) vclub; urgency=low
 
   * no-more-pads should not be thrown

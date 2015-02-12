@@ -551,7 +551,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
       }
       gst_caps_unref (rtcp_caps);
     }
-    /*gst_caps_unref (caps); */
+    gst_caps_unref (caps);
   } else {
     GST_WARNING_OBJECT (self, "Pad has NO caps, this is not good.");
   }
