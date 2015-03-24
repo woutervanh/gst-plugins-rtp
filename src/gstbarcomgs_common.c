@@ -66,9 +66,10 @@ gst_barco_is_ipv4 (GstUri* uri)
 void
 gst_barco_parse_uri (GObject * obj, GstUri* uri, GstDebugCategory * cat)
 {
-    GHashTable *hash_table = gst_uri_get_query_table (uri);
-    GList *keys = NULL, *key;
+  GHashTable *hash_table = gst_uri_get_query_table (uri);
+  GList *keys = NULL, *key;
 
+  if (hash_table != NULL){
     keys = g_hash_table_get_keys (hash_table);
 
     for (key = keys; key; key = key->next) {
@@ -133,4 +134,5 @@ gst_barco_parse_uri (GObject * obj, GstUri* uri, GstDebugCategory * cat)
 
     g_list_free (keys);
     g_hash_table_destroy (hash_table);
+  }
 }
