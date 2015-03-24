@@ -819,7 +819,9 @@ gst_rtp_src_start (GstRtpSrc * self)
         "async", FALSE,
         "buffer-size", self->buffer_size,
         "multicast-iface", self->multicast_iface,
-        "auto-multicast", FALSE, "close-socket", FALSE, NULL);
+        "auto-multicast", FALSE,
+	"close-socket", FALSE,
+	NULL);
   }
 
   g_object_set (G_OBJECT (self->rtpbin),
