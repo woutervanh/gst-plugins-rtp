@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-8) vclub; urgency=low
+
+  * use gsturi instead of soup_uri
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 24 Mar 2015 14:33:08 +0000
+
 gst-plugins-barcortp (1.4.5-7) vclub; urgency=low
 
   * remove rtp caps leak
