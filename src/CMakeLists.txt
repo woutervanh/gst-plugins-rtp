@@ -12,7 +12,6 @@ include_directories (
   ${CMAKE_SOURCE_DIR}
   ${GST_INCLUDE_DIRS}
   ${GSTPBUTILS_INCLUDE_DIRS}
-  ${SOUP_INCLUDE_DIRS}
 )
 
 add_library (gst-plugins-barcortp SHARED ${C_FILES})
@@ -25,7 +24,6 @@ target_link_libraries (gst-plugins-barcortp
   ${GSTRTSP_LIBRARIES}
   ${GSTPBUTILS_LIBRARIES}
   ${GSTVIDEO_LIBRARIES}
-  ${SOUP_LIBRARIES}
 )
 
 if (WIN32)

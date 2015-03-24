@@ -1,8 +1,9 @@
 #ifndef _GST_RTP_SRC_H_
 #define _GST_RTP_SRC_H_
 
-#include "gst/gst.h"
-#include <libsoup/soup.h>
+#include <gst/gst.h>
+#include <gst/gsturi.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 #define GST_TYPE_RTP_SRC             (gst_rtp_src_get_type ())
@@ -23,7 +24,7 @@ struct _GstRtpSrc
 {
   GstBin parent_instance;
 
-  SoupURI *uri, *rtcp_remote_uri;
+  GstUri *uri, *rtcp_remote_uri;
   gchar *last_uri;
   gchar *encoding_name;
   guint pt_select;

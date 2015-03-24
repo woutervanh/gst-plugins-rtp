@@ -1,8 +1,9 @@
 #ifndef _GST_RTP_SINK_H_
 #define _GST_RTP_SINK_H_
 
-#include "gst/gst.h"
-#include <libsoup/soup.h>
+#include <gst/gst.h>
+#include <gst/gsturi.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 #define GST_TYPE_RTP_SINK             (gst_rtp_sink_get_type ())
@@ -23,7 +24,7 @@ struct _GstRtpSink
 {
   GstBin parent_instance;
 
-  SoupURI *uri;
+  GstUri *uri;
   gchar *last_uri;
 
   GSocket *rtp_sink_socket;

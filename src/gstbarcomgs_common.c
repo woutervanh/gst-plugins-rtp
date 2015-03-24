@@ -45,16 +45,16 @@ gst_barco_query_to_boolean (gchar * value)
 }
 
 gboolean
-gst_barco_is_ipv4 (SoupURI * uri)
+gst_barco_is_ipv4 (GstUri* uri)
 {
   gboolean res = TRUE;
 
-  if (uri && 0 != *(uri->host)) {
-    GInetAddress *addr = g_inet_address_new_from_string (uri->host);
+  if (uri && 0 != *(gst_uri_get_host(uri))) {
+    GInetAddress *addr = g_inet_address_new_from_string (gst_uri_get_host(uri));
     if (g_inet_address_get_family (addr) == G_SOCKET_FAMILY_IPV4) {
-      g_print ("IPv4 based on %s\n", uri->host);
+      g_print ("IPv4 based on %s\n", gst_uri_get_host(uri));
     } else {
-      g_print ("No IPv4 based on %s\n", uri->host);
+      g_print ("No IPv4 based on %s\n", gst_uri_get_host(uri));
       res = FALSE;
     }
     g_object_unref (addr);
@@ -64,13 +64,11 @@ gst_barco_is_ipv4 (SoupURI * uri)
 }
 
 void
-gst_barco_parse_uri (GObject * obj, SoupURI * uri, GstDebugCategory * cat)
+gst_barco_parse_uri (GObject * obj, GstUri* uri, GstDebugCategory * cat)
 {
-  if (uri && uri->query) {
-    GHashTable *hash_table = NULL;
+    GHashTable *hash_table = gst_uri_get_query_table (uri);
     GList *keys = NULL, *key;
 
-    hash_table = soup_form_decode (uri->query);
     keys = g_hash_table_get_keys (hash_table);
 
     for (key = keys; key; key = key->next) {
@@ -135,5 +133,4 @@ gst_barco_parse_uri (GObject * obj, SoupURI * uri, GstDebugCategory * cat)
 
     g_list_free (keys);
     g_hash_table_destroy (hash_table);
-  }
 }

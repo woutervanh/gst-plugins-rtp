@@ -269,8 +269,8 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
   switch (prop_id) {
     case PROP_URI:
       if (self->uri)
-        soup_uri_free (self->uri);
-      self->uri = soup_uri_new (g_value_get_string (value));
+        gst_object_unref (self->uri);
+      self->uri = gst_uri_from_string (g_value_get_string (value));
       gst_rtp_sink_check_uri (self);
       break;
     case PROP_TTL:
@@ -308,7 +308,7 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
   switch (prop_id) {
     case PROP_URI:
       if (self->uri) {
-        gchar *string = soup_uri_to_string (self->uri, FALSE);
+        gchar *string = gst_uri_to_string (self->uri);
 
         g_value_set_string (value, string);
         g_free (string);
@@ -478,7 +478,7 @@ gst_rtp_sink_start (GstRtpSink * self)
       "async", FALSE,
       "ttl", self->ttl,
       "ttl-mc", self->ttl_mc,
-      "host", self->uri->host, "port", self->uri->port,
+      "host", gst_uri_get_host(self->uri), "port", gst_uri_get_port(self->uri),
       "socket", self->rtp_sink_socket, "auto-multicast", TRUE, NULL);
 
   /* auto-multicast should be set to false as rtcp_src will already
@@ -488,16 +488,16 @@ gst_rtp_sink_start (GstRtpSink * self)
       "async", FALSE,
       "ttl", self->ttl,
       "ttl-mc", self->ttl_mc,
-      "host", self->uri->host, "port", self->uri->port + 1,
+      "host", gst_uri_get_host(self->uri), "port", gst_uri_get_port(self->uri) + 1,
       "close-socket", FALSE, "auto-multicast", FALSE, NULL);
 
-  if (gst_rtp_sink_is_multicast (self->uri->host)) {
+  if (gst_rtp_sink_is_multicast (gst_uri_get_host(self->uri))) {
     uri = g_strdup_printf ("udp://%s:%u",
-        self->uri->host, self->uri->port + 1);
+        gst_uri_get_host(self->uri), gst_uri_get_port(self->uri) + 1);
     g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
     g_free (uri);
   } else
-    g_object_set (G_OBJECT (self->rtcp_src), "port", self->uri->port + 1,
+    g_object_set (G_OBJECT (self->rtcp_src), "port", gst_uri_get_port(self->uri) + 1,
         NULL);
 
   caps = gst_caps_from_string ("application/x-rtcp");
@@ -546,7 +546,7 @@ gst_rtp_sink_start (GstRtpSink * self)
 
   /** The order of these lines is really important **/
   /* First we update the state of rtcp_src so that it creates a socket and
-   * binds on the port self->uri->port + 1 */
+   * binds on the port gst_uri_get_port(self->uri) + 1 */
   if (!gst_element_sync_state_with_parent (self->rtcp_src))
     GST_ERROR_OBJECT (self, "Could not set RTCP source to playing");
   /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
@@ -595,7 +595,7 @@ gst_rtp_sink_finalize (GObject * gobject)
   GstRtpSink *self = GST_RTP_SINK (gobject);
 
   if (self->uri)
-    soup_uri_free (self->uri);
+    gst_object_unref (self->uri);
 
   G_OBJECT_CLASS (parent_class)->finalize (gobject);
 }
@@ -603,7 +603,7 @@ gst_rtp_sink_finalize (GObject * gobject)
 static void
 gst_rtp_sink_init (GstRtpSink * self)
 {
-  self->uri = soup_uri_new (DEFAULT_PROP_URI);
+  self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
   self->src_port = DEFAULT_SRC_PORT;
@@ -645,7 +645,7 @@ gst_rtp_sink_uri_get_uri (GstURIHandler * handler)
 {
   GstRtpSink *self = (GstRtpSink *) handler;
 
-  self->last_uri = soup_uri_to_string (self->uri, FALSE);
+  self->last_uri = gst_uri_to_string (self->uri);
 
   return self->last_uri;
 }
