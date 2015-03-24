@@ -311,7 +311,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
     case PROP_URI:{
       gchar *uri = NULL;
       if (self->uri)
-        gst_object_unref (self->uri);
+        gst_uri_unref (self->uri);
       self->uri = gst_uri_from_string (g_value_get_string (value));
 
       gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
@@ -931,7 +931,7 @@ gst_rtp_src_finalize (GObject * gobject)
   GstRtpSrc *src = GST_RTP_SRC (gobject);
 
   if (src->uri)
-    gst_object_unref (src->uri);
+    gst_uri_unref (src->uri);
   if (src->encoding_name)
     g_free (src->encoding_name);
 
