@@ -11,6 +11,7 @@ include_directories (
   ${CMAKE_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}
   ${GST_INCLUDE_DIRS}
+  ${GIO_INCLUDE_DIRS}
   ${GSTPBUTILS_INCLUDE_DIRS}
 )
 
@@ -18,6 +19,7 @@ add_library (gst-plugins-barcortp SHARED ${C_FILES})
 
 target_link_libraries (gst-plugins-barcortp
   ${GST_LIBRARIES}
+  ${GIO_LIBRARIES}
   ${GSTBASE_LIBRARIES}
   ${GSTRTP_LIBRARIES}
   ${GSTNET_LIBRARIES}

@@ -27,7 +27,7 @@ pkg_check_modules (GOBJECT REQUIRED gobject-2.0)
 if(WIN32)
 pkg_check_modules (GIO REQUIRED gio-2.0)
 else(WIN32)
-pkg_check_modules (GIOUNIX REQUIRED gio-unix-2.0)
+pkg_check_modules (GIO REQUIRED gio-unix-2.0)
 endif(WIN32)
 
 pkg_check_modules (GST REQUIRED gstreamer-1.0)

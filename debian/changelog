@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-9) vclub; urgency=low
+
+  * link against GIO libs
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 24 Mar 2015 14:58:30 +0000
+
 gst-plugins-barcortp (1.4.5-8) vclub; urgency=low
 
   * use gsturi instead of soup_uri
