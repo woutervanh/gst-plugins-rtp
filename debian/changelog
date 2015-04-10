@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-11) vclub; urgency=low
+
+  * hash_table with gst_uri_get_query needs to be unreffed, not destroyed
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Fri, 10 Apr 2015 11:05:31 +0000
+
 gst-plugins-barcortp (1.4.5-10) vclub; urgency=low
 
   * check if hash_table is NULL before parsing uri
