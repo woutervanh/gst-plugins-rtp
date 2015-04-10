@@ -133,6 +133,6 @@ gst_barco_parse_uri (GObject * obj, GstUri* uri, GstDebugCategory * cat)
     }
 
     g_list_free (keys);
-    g_hash_table_destroy (hash_table);
+    g_hash_table_unref (hash_table);
   }
 }
