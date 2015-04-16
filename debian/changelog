@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-13) vclub; urgency=low
+
+  * fixup VP8 encoding-name to crappy VP8-DRAFT-IETF-01
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Thu, 16 Apr 2015 13:48:37 +0000
+
 gst-plugins-barcortp (1.4.5-12) vclub; urgency=low
 
   * enable VP8 for rtp depayloading
