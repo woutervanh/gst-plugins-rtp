@@ -614,10 +614,11 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
 static void
 gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
 {
-  /*caps="application/x-rtp, media=(string)audio, clock-rate=(int)32000, encoding-name=(string)MP4A-LATM, payload=(int)96" */
-  /*caps="application/x-rtp, media=(string)audio, clock-rate=(int)32000, encoding-name=MPEG4-GENERIC,config=(string)1288,sizelength=(string)13" */
-  /*caps="application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)L16, encoding-params=(string)2, channels=(int)2, payload=(int)96" */
-  /* application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)MP4A-LATM" */
+  /* caps="application/x-rtp, media=(string)audio, clock-rate=(int)32000, encoding-name=(string)MP4A-LATM, payload=(int)96" */
+  /* caps="application/x-rtp, media=(string)audio, clock-rate=(int)32000, encoding-name=MPEG4-GENERIC,config=(string)1288,sizelength=(string)13" */
+  /* caps="application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)L16, encoding-params=(string)2, channels=(int)2, payload=(int)96" */
+  /* caps="application/x-rtp, media=(string)audio, clock-rate=(int)48000, encoding-name=(string)MP4A-LATM" */
+  /* caps="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)VP8-DRAFT-IETF-01, payload=(int)96" */
   if (g_strcmp0 (encoding_name, "MPEG4-GENERIC-AUDIO") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "audio",
@@ -627,19 +628,19 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
         "config", G_TYPE_STRING, "1190",
         "sizelength", G_TYPE_STRING, "13", NULL);
   }
-  if (g_strcmp0 (encoding_name, "L16") == 0) {
+  else if (g_strcmp0 (encoding_name, "L16") == 0) {
     gst_caps_set_simple (ret,
         "clock-rate", G_TYPE_INT, 48000,
         "encoding-name", G_TYPE_STRING, "L16", "channels", G_TYPE_INT, 2, NULL);
   }
-  if (g_strcmp0 (encoding_name, "MP4A-LATM") == 0) {
+  else if (g_strcmp0 (encoding_name, "MP4A-LATM") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "audio",
         "clock-rate", G_TYPE_INT, 48000,
         "encoding-name", G_TYPE_STRING, "MP4A-LATM",
         "channels", G_TYPE_INT, 2, NULL);
   }
-  if (g_strcmp0 (encoding_name, "RAW-RGB24") == 0) {
+  else if (g_strcmp0 (encoding_name, "RAW-RGB24") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "video",
         "clock-rate", G_TYPE_INT, 90000,
@@ -647,6 +648,13 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
         "sampling", G_TYPE_STRING, "RGB",
         "depth", G_TYPE_INT, 24,
         "width", G_TYPE_INT, 800, "height", G_TYPE_INT, 600, NULL);
+  }
+  else if (g_strcmp0 (encoding_name, "VP8") == 0) {
+    gst_caps_set_simple (ret,
+        "media", G_TYPE_STRING, "video",
+        "clock-rate", G_TYPE_INT, 90000,
+        "encoding-name", G_TYPE_STRING, "VP8-DRAFT-IETF-01",
+        NULL);
   }
 }
 
