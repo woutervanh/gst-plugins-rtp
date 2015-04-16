@@ -111,6 +111,7 @@ const static RtpParameters RTP_DYNAMIC_PARAMETERS[] = {
   {0, "THEORA", "video", 90000},
   /*application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)RAW, sampling=(string)RGB, depth=(string)24, width=(string)800, height=(string)600, colorimetry=(string)SMPTE240M, payload=(int)127 */
   {0, "RAW-RGB24", "video", 90000},
+  {0, "VP8", "video", 90000},
   {-1, NULL, NULL, 0}
 };
 
