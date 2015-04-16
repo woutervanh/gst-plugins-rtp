@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-12) vclub; urgency=low
+
+  * enable VP8 for rtp depayloading
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Thu, 16 Apr 2015 13:24:54 +0000
+
 gst-plugins-barcortp (1.4.5-11) vclub; urgency=low
 
   * hash_table with gst_uri_get_query needs to be unreffed, not destroyed
