@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.4.5-14) vclub; urgency=low
+
+  * rtpparameters: return values for VP8-DRAFT too in RTP parameters
+
+ -- Marc Leeman <marc.leeman@gmail.com>  Wed, 22 Apr 2015 11:40:45 +0000
+
 gst-plugins-barcortp (1.4.5-13) vclub; urgency=low
 
   * fixup VP8 encoding-name to crappy VP8-DRAFT-IETF-01
