@@ -1,3 +1,11 @@
+gst-plugins-barcortp (1.6.0-1) vclub; urgency=medium
+
+  * rtpsrc: V2D tweaking
+  * rtpsrc: whitespace
+  * rtpsrc: add extra information about hosts
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 13 Oct 2015 07:34:55 +0000
+
 gst-plugins-barcortp (1.4.5-14) vclub; urgency=low
 
   * rtpparameters: return values for VP8-DRAFT too in RTP parameters
