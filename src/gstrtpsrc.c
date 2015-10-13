@@ -656,6 +656,32 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
         "encoding-name", G_TYPE_STRING, "VP8-DRAFT-IETF-01",
         NULL);
   }
+  else if (g_strcmp0 (encoding_name, "V2D") == 0) {
+    /* application/x-rtp,
+     * media=(string)video,
+     * clock-rate=(int)90000,
+     * encoding-name=(string)V2D,
+     * width=(int)1920,
+     * original-width=(int)1920,
+     * height=(int)1200,
+     * original-height=(int)1200,
+     * slice-size=(int)36,
+     * format=(int)0,
+     * max-slice-number=(int)1000,
+     * stereo-mode=(int)0,
+     * comp-mode=(int)0,
+     * motion-comp-mode=(int)0,
+     * ssrc=(uint)2621274064,
+     * payload=(int)96,
+     * timestamp-offset=(uint)1572929903,
+     * seqnum-offset=(uint)29225
+     * */
+    gst_caps_set_simple (ret,
+        "media", G_TYPE_STRING, "video",
+        "clock-rate", G_TYPE_INT, 90000,
+        "encoding-name", G_TYPE_STRING, "V2D",
+        NULL);
+  }
 }
 
 static GstCaps *
