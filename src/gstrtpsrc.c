@@ -34,12 +34,12 @@ enum
   PROP_LAST
 };
 
-#define DEFAULT_PROP_URI          		(NULL)
-#define DEFAULT_PROP_MUXER        		(NULL)
-#define DEFAULT_LATENCY_MS        		(200)
-#define DEFAULT_BUFFER_SIZE       		(0)
-#define DEFAULT_ENABLE_RTCP	      		(TRUE)
-#define DEFAULT_PROP_MULTICAST_IFACE 	(NULL)
+#define DEFAULT_PROP_URI              (NULL)
+#define DEFAULT_PROP_MUXER            (NULL)
+#define DEFAULT_LATENCY_MS            (200)
+#define DEFAULT_BUFFER_SIZE           (0)
+#define DEFAULT_ENABLE_RTCP           (TRUE)
+#define DEFAULT_PROP_MULTICAST_IFACE  (NULL)
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 #define DEFAULT_PROP_TIMEOUT          (0)
@@ -854,8 +854,8 @@ gst_rtp_src_start (GstRtpSrc * self)
         "buffer-size", self->buffer_size,
         "multicast-iface", self->multicast_iface,
         "auto-multicast", FALSE,
-	"close-socket", FALSE,
-	NULL);
+  "close-socket", FALSE,
+  NULL);
   }
 
   g_object_set (G_OBJECT (self->rtpbin),
