@@ -813,10 +813,12 @@ gst_rtp_src_start (GstRtpSrc * self)
 
   /* Set properties */
   if (gst_rtp_src_is_multicast (gst_uri_get_host(self->uri))) {
+    GST_DEBUG_OBJECT(self, "Setting a multicast URI.");
     uri = g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri), gst_uri_get_port(self->uri));
     g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
     g_free (uri);
   } else {
+    GST_DEBUG_OBJECT(self, "Setting a unicast URI.");
     g_object_set (G_OBJECT (self->rtp_src), "port", gst_uri_get_port(self->uri), NULL);
   }
 
