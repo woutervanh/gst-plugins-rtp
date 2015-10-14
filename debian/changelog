@@ -1,3 +1,12 @@
+gst-plugins-barcortp (1.6.0-2) vclub; urgency=medium
+
+  * rtpsrc: trhow no_more_pads to keep uridecodebin happy
+  * rtpsrc: set the state changes explicitly instead of sync_with_parent
+  * rtpsrc: use presence of GstElement instead of boolean to link up elements
+  * rtpsrc: hook up elements during NULL_TO_READY change instead of READY_TO_PAUSED
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 14 Oct 2015 15:22:37 +0000
+
 gst-plugins-barcortp (1.6.0-1) vclub; urgency=medium
 
   * rtpsrc: V2D tweaking
