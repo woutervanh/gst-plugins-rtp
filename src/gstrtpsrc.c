@@ -770,6 +770,7 @@ gst_rtp_src_start (GstRtpSrc * self)
 {
   gchar *uri = NULL;
   GstElement *lastelt;
+  GstStateChangeReturn ret;
 
   /* Create elements */
   GST_DEBUG_OBJECT (self, "Creating elements");
@@ -906,29 +907,68 @@ gst_rtp_src_start (GstRtpSrc * self)
   }
 
   /* Sync elements states to the parent bin */
-  if (!gst_element_sync_state_with_parent (self->rtp_src))
-    GST_ERROR_OBJECT (self, "Could not set RTP source to playing");
-  if (self->encrypt)
-    gst_element_sync_state_with_parent (self->rtpdecrypt);
-  if (self->rtpheaderchange)
-    gst_element_sync_state_with_parent (self->rtpheaderchange);
-  if (!gst_element_sync_state_with_parent (self->rtpbin))
-    GST_ERROR_OBJECT (self, "Could not set RTP bin to playing");
+  ret = gst_element_set_state (self->rtp_src, GST_STATE_READY);
+  if (ret == GST_STATE_CHANGE_FAILURE){
+    GST_ERROR_OBJECT (self, "Could not set RTP source to READY");
+
+    gst_element_set_state (self->rtp_src, GST_STATE_NULL);
+    gst_object_unref (self->rtp_src);
+    self->rtp_src = NULL;
+  }
+
+  if(self->rtpdecrypt){
+    ret = gst_element_set_state (self->rtpdecrypt, GST_STATE_READY);
+    if (ret == GST_STATE_CHANGE_FAILURE){
+      GST_ERROR_OBJECT (self, "Could not set RTP decrypt to READY");
+
+      gst_element_set_state (self->rtpdecrypt, GST_STATE_NULL);
+      gst_object_unref (self->rtpdecrypt);
+      self->rtpdecrypt = NULL;
+    }
+  }
+
+  if(self->rtpheaderchange){
+    ret = gst_element_set_state (self->rtpheaderchange, GST_STATE_READY);
+    if (ret == GST_STATE_CHANGE_FAILURE){
+      GST_ERROR_OBJECT (self, "Could not set RTP headerchange to READY");
+
+      gst_element_set_state (self->rtpheaderchange, GST_STATE_NULL);
+      gst_object_unref (self->rtpheaderchange);
+      self->rtpheaderchange = NULL;
+    }
+  }
+
+  ret = gst_element_set_state (self->rtpbin, GST_STATE_READY);
+  if (ret == GST_STATE_CHANGE_FAILURE){
+    GST_ERROR_OBJECT (self, "Could not set RTP bin to READY");
+  }
 
   if (self->enable_rtcp) {
     GSocket *rtcpfd = NULL;
     /** The order of these lines is really important **/
     /* First we update the state of rtcp_src so that it creates a socket */
-    if (!gst_element_sync_state_with_parent (self->rtcp_src))
-      GST_ERROR_OBJECT (self, "Could not set RTCP source to playing");
+
+    ret = gst_element_set_state (self->rtcp_src, GST_STATE_READY);
+    if (ret == GST_STATE_CHANGE_FAILURE){
+      GST_ERROR_OBJECT (self, "Could not set RTP src to READY");
+
+      gst_element_set_state (self->rtcp_src, GST_STATE_NULL);
+      gst_object_unref (self->rtcp_src);
+      self->rtcp_src = NULL;
+    }
 
     /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
     rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (self);
     g_object_set (G_OBJECT (self->rtcp_sink), "socket", rtcpfd, NULL);
 
-    /* And we sync the state of rtcp_sink */
-    if (!gst_element_sync_state_with_parent (self->rtcp_sink))
-      GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
+    ret = gst_element_set_state (self->rtcp_sink, GST_STATE_READY);
+    if (ret == GST_STATE_CHANGE_FAILURE){
+      GST_ERROR_OBJECT (self, "Could not set RTP sink to READY");
+
+      gst_element_set_state (self->rtcp_sink, GST_STATE_NULL);
+      gst_object_unref (self->rtcp_sink);
+      self->rtcp_sink = NULL;
+    }
   }
 
   return TRUE;
