@@ -866,15 +866,14 @@ gst_rtp_src_start (GstRtpSrc * self)
       "autoremove", TRUE,
       "ignore-pt", self->pt_change, "latency", self->latency, NULL);
 
-  if (self->encrypt)
+  if (self->rtpdecrypt)
     g_object_set (G_OBJECT (self->rtpdecrypt), "rate",
         self->key_derivation_rate, NULL);
-
 
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (self), self->rtp_src, self->rtpbin, NULL);
   lastelt = self->rtp_src;
-  if (self->encrypt) {
+  if (self->rtpdecrypt) {
     GST_DEBUG_OBJECT (self, "Adding decryption");
     gst_bin_add (GST_BIN (self), self->rtpdecrypt);
     gst_element_link (lastelt, self->rtpdecrypt);
