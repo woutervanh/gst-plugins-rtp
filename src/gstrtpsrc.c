@@ -977,29 +977,42 @@ static GstStateChangeReturn
 gst_rtp_src_change_state (GstElement * element, GstStateChange transition)
 {
   GstRtpSrc *self = GST_RTP_SRC (element);
+  GstStateChangeReturn ret;
 
   switch (transition) {
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
+    case GST_STATE_CHANGE_NULL_TO_READY:
       GST_DEBUG_OBJECT (self, "Configuring rtpsrc");
       if (!gst_rtp_src_start (self)) {
-        GST_DEBUG_OBJECT (self, "Start failed");
-        return GST_STATE_CHANGE_FAILURE;
+        goto start_failed;
       }
+      break;
+    case GST_STATE_CHANGE_READY_TO_PAUSED:
       break;
     case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
       break;
     case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
       break;
     case GST_STATE_CHANGE_PAUSED_TO_READY:
-    {
-      GST_DEBUG_OBJECT (self, "Shutting down");
-    }
+      {
+        GST_DEBUG_OBJECT (self, "Shutting down");
+      }
       break;
     default:
       break;
   }
 
-  return GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+  ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+  if (ret == GST_STATE_CHANGE_FAILURE)
+    goto done;
+
+done:
+  return ret;
+
+start_failed:
+  {
+    GST_DEBUG_OBJECT (self, "start failed");
+    return GST_STATE_CHANGE_FAILURE;
+  }
 }
 
 static void
