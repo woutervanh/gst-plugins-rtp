@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.6.2.1) vclub; urgency=medium
+
+  * control: adjust short description
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 15 Dec 2015 12:36:20 +0000
+
 gst-plugins-barcortp (1.6.0-2) vclub; urgency=medium
 
   * rtpsrc: trhow no_more_pads to keep uridecodebin happy
