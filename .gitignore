@@ -1,0 +1,9 @@
+*~
+debian/files
+debian/*.debhelper.log
+debian/*.debhelper
+debian/*.substvars
+debian/gstreamer1.0-plugins-barcortp/
+debian/stamp-*
+obj-x86_64-linux-gnu/
+
