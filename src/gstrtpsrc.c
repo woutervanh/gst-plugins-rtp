@@ -18,19 +18,20 @@ GST_DEBUG_CATEGORY_STATIC (rtp_src_debug);
 enum
 {
   PROP_0,
-  PROP_URI,
-  PROP_ENCODING_NAME,
+  PROP_BUFFER_SIZE,
+  PROP_CAPS,
   PROP_ENABLE_RTCP,
+  PROP_ENCODING_NAME,
+  PROP_ENCRYPT,
+  PROP_KEY_DERIV_RATE,
   PROP_LATENCY,
+  PROP_MULTICAST_IFACE,
   PROP_PT_CHANGE,
   PROP_PT_SELECT,
   PROP_SSRC_CHANGE,
   PROP_SSRC_SELECT,
-  PROP_MULTICAST_IFACE,
-  PROP_BUFFER_SIZE,
-  PROP_ENCRYPT,
-  PROP_KEY_DERIV_RATE,
   PROP_TIMEOUT,
+  PROP_URI,
   PROP_LAST
 };
 
@@ -268,6 +269,18 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
           GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT, G_PARAM_READWRITE));
 
+  /**
+   * GstRtpSrc::caps
+   *
+   * The RTP caps of the stream coming in
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass, PROP_CAPS,
+      g_param_spec_boxed ("caps", "Caps",
+          "The caps of the incoming stream", GST_TYPE_CAPS,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
   gst_element_class_add_pad_template (gstelement_class,
       gst_static_pad_template_get (&src_template));
 
@@ -413,6 +426,26 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
             self->ssrc_select, NULL);
       GST_DEBUG_OBJECT (self, "set ssrc select: %u", self->ssrc_select);
       break;
+    case PROP_CAPS:
+    {
+      const GstCaps *new_caps_val = gst_value_get_caps (value);
+      GstCaps *new_caps;
+      GstCaps *old_caps;
+
+      if (new_caps_val == NULL) {
+        new_caps = gst_caps_new_any ();
+      } else {
+        GST_DEBUG_OBJECT (self, "Setting caps to %" GST_PTR_FORMAT,
+            new_caps_val);
+        new_caps = gst_caps_copy (new_caps_val);
+      }
+
+      old_caps = self->caps;
+      self->caps = new_caps;
+      if (old_caps)
+        gst_caps_unref (old_caps);
+      break;
+    }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -472,6 +505,9 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
       break;
     case PROP_SSRC_SELECT:
       g_value_set_uint (value, self->ssrc_select);
+      break;
+    case PROP_CAPS:
+      gst_value_set_caps (value, self->caps);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -692,8 +728,14 @@ gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id, guint pt,
   GstCaps *ret = NULL;
   int i = 0;
 
-  GST_DEBUG_OBJECT (self, "requesting caps for pt %u in session %u", pt,
+  GST_DEBUG_OBJECT (self, "Requesting caps for pt %u in session %u", pt,
       sess_id);
+
+  if (self->caps){
+    GST_DEBUG_OBJECT(self, "Full caps were set, no need for lookup %" GST_PTR_FORMAT, self->caps);
+    ret = gst_caps_copy (self->caps);
+    goto full_caps_set;
+  }
 
   if (self->encoding_name)
     goto dynamic;
@@ -762,6 +804,7 @@ beach:
   gst_rtp_src_fixup_caps (ret, p->encoding_name);
   GST_DEBUG_OBJECT (self, "Decided on caps %" GST_PTR_FORMAT, ret);
 
+full_caps_set:
   return ret;
 }
 
@@ -1048,6 +1091,7 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
+  self->caps = NULL;
 
   self->rtpheaderchange = NULL;
 

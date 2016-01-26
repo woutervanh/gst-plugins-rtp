@@ -46,6 +46,7 @@ struct _GstRtpSrc
   GstElement *rtpbin;
   GstElement *rtpheaderchange;
   GstElement *rtpdecrypt;
+  GstCaps *caps;
 
   gint n_ptdemux_pads;
   gint n_rtpbin_pads;
