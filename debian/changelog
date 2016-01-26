@@ -1,3 +1,11 @@
+gst-plugins-barcortp (1.6.2.2) vclub; urgency=medium
+
+  * gitignore: ignore generated files
+  * debian: ancient-standards-version, package-needs-versioned-debhelper-build-depends
+  * rtpsrc: allow setting caps
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 26 Jan 2016 11:13:29 +0000
+
 gst-plugins-barcortp (1.6.2.1) vclub; urgency=medium
 
   * control: adjust short description
