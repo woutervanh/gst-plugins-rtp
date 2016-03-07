@@ -151,7 +151,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
    */
   g_object_class_install_property (oclass, PROP_MULTICAST_IFACE,
       g_param_spec_string ("multicast-iface", "Multicast Interface",
-          "Multicast Interface", DEFAULT_PROP_MULTICAST_IFACE,
+          "Multicast Interface to listen on", DEFAULT_PROP_MULTICAST_IFACE,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
