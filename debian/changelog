@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.6.3.1) vclub; urgency=medium
+
+  * rtpsrc: adjust comment mcast iface to be in sync with urirecv
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 07 Mar 2016 16:19:41 +0000
+
 gst-plugins-barcortp (1.6.2.2) vclub; urgency=medium
 
   * gitignore: ignore generated files
