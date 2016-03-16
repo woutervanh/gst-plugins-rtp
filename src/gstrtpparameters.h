@@ -46,6 +46,7 @@ const static RtpParameters RTP_STATIC_PARAMETERS[] = {
 const static RtpParameters RTP_DYNAMIC_PARAMETERS[] = {
   {0, "MP4V-ES", "video", 90000},
   {0, "H264", "video", 90000},
+  {0, "H265", "video", 90000},
   {0, "MP2P", "video", 90000},
   {0, "H263-1998", "video", 90000},
   {0, "H263-2000", "video", 90000},
