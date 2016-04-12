@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.8.0.1) vclub; urgency=medium
+
+  * Recompile for 1.8.0
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 12 Apr 2016 13:27:57 +0000
+
 gst-plugins-barcortp (1.6.3.2) vclub; urgency=medium
 
   * rtpparameters: add H265 as encoding parameters
