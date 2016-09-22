@@ -39,6 +39,7 @@ struct _GstRtpSrc
   guint64 timeout;
 
   gboolean enable_rtcp;
+  guint16 rtcp_ttl_mc;
 
   GstElement *rtp_src;
   GstElement *rtcp_src;

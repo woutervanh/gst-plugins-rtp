@@ -32,6 +32,7 @@ enum
   PROP_SSRC_SELECT,
   PROP_TIMEOUT,
   PROP_URI,
+  PROP_RTCP_TTL_MC,
   PROP_LAST
 };
 
@@ -44,6 +45,7 @@ enum
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
 #define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 #define DEFAULT_PROP_TIMEOUT          (0)
+#define DEFAULT_PROP_RTCP_TTL_MC      (1)
 
 /* 0 size means just pass the buffer along */
 #define GST_RTPPTCHANGE_DEFAULT_PT_NUMBER (0)
@@ -80,7 +82,8 @@ static GstCaps *gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id,
 static GstStateChangeReturn
 gst_rtp_src_change_state (GstElement * element, GstStateChange transition);
 static gboolean gst_rtp_src_is_multicast (const gchar * ip_addr);
-GSocket *gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self);
+static GSocket *gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self);
+
 static void
 gst_rtp_src_class_init (GstRtpSrcClass * klass)
 {
@@ -281,6 +284,31 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "The caps of the incoming stream", GST_TYPE_CAPS,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * GstRtpSrc::rtcp-ttl-mc
+   *
+   * This parameter applies to incoming multicast traffic only.
+   *
+   * Video sources on occasion deliver RTCP along RTP payload, rtpsrc then would
+   * respond with Receiver Reports on the RTCP socket.
+   *
+   * While unicast delivery usually gets sufficent TTL that
+   * defaults to /proc/sys/net/ipv4/ip_default_ttl,
+   * multicast TTL has to be specified explicitly as it's
+   * system default value of 1 is immutable.
+   *
+   * Since: ??
+   */
+  g_object_class_install_property (oclass,
+      PROP_RTCP_TTL_MC,
+      g_param_spec_uint ("rtcp-ttl-mc",
+          "Time-to-live for multicast RTCP Receiver Reports",
+          "Time-to-live for multicast RTCP Receiver Reports",
+          DEFAULT_PROP_RTCP_TTL_MC,
+          64,
+          DEFAULT_PROP_RTCP_TTL_MC, G_PARAM_READWRITE));
+
+
   gst_element_class_add_pad_template (gstelement_class,
       gst_static_pad_template_get (&src_template));
 
@@ -298,7 +326,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
       "barcortpsrc", 0, "Barco rtp send bin");
 }
 
-GSocket *
+static GSocket *
 gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 {
   GSocket *rtcpfd;
@@ -446,6 +474,9 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         gst_caps_unref (old_caps);
       break;
     }
+    case PROP_RTCP_TTL_MC:
+      self->rtcp_ttl_mc = g_value_get_uint (value);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -508,6 +539,9 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
       break;
     case PROP_CAPS:
       gst_value_set_caps (value, self->caps);
+      break;
+    case PROP_RTCP_TTL_MC:
+      g_value_set_uint (value, self->rtcp_ttl_mc);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -900,8 +934,8 @@ gst_rtp_src_start (GstRtpSrc * self)
         "buffer-size", self->buffer_size,
         "multicast-iface", self->multicast_iface,
         "auto-multicast", FALSE,
-  "close-socket", FALSE,
-  NULL);
+        "close-socket", FALSE,
+        NULL);
   }
 
   g_object_set (G_OBJECT (self->rtpbin),
@@ -987,6 +1021,7 @@ gst_rtp_src_start (GstRtpSrc * self)
 
   if (self->enable_rtcp) {
     GSocket *rtcpfd = NULL;
+
     /** The order of these lines is really important **/
     /* First we update the state of rtcp_src so that it creates a socket */
 
@@ -1001,7 +1036,35 @@ gst_rtp_src_start (GstRtpSrc * self)
 
     /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
     rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (self);
-    g_object_set (G_OBJECT (self->rtcp_sink), "socket", rtcpfd, NULL);
+    g_object_set (G_OBJECT (self->rtcp_sink),
+        "socket", rtcpfd,
+        "ttl-mc", self->rtcp_ttl_mc,
+        NULL);
+
+#if 0 // debug
+    {
+    GSocket *gsock = NULL;
+    gchar *name = NULL;
+    char *host = NULL;
+    guint port = 0;
+    guint ttl = 0;
+    guint ttl_mc = 0;
+
+      g_object_get (G_OBJECT (self->rtcp_sink),
+          "name", &name,
+          "host", &host,
+          "port", &port,
+          "ttl", &ttl,
+          "ttl-mc", &ttl_mc,
+          "socket", &gsock,
+      NULL);
+
+      GST_ERROR_OBJECT (self, "RTCP sink %s %s:%u; ttl prop %u real %u", name, host, port,
+        ttl, g_socket_get_ttl(gsock));
+      GST_ERROR_OBJECT (self, "RTCP sink %s %s:%u; mcast ttl prop %u real %u", name, host, port,
+        ttl_mc, g_socket_get_multicast_ttl(gsock));
+    }
+#endif
 
     ret = gst_element_set_state (self->rtcp_sink, GST_STATE_READY);
     if (ret == GST_STATE_CHANGE_FAILURE){
@@ -1015,6 +1078,7 @@ gst_rtp_src_start (GstRtpSrc * self)
 
   return TRUE;
 }
+
 
 static GstStateChangeReturn
 gst_rtp_src_change_state (GstElement * element, GstStateChange transition)
@@ -1092,6 +1156,7 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
   self->caps = NULL;
+  self->rtcp_ttl_mc = DEFAULT_PROP_RTCP_TTL_MC;
 
   self->rtpheaderchange = NULL;
 
