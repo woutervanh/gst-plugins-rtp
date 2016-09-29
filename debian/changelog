@@ -1,4 +1,4 @@
-gst-plugins-barcortp (1.8.0.2) vclub; urgency=medium
+gst-plugins-barcortp (1.8.3.1) vclub; urgency=medium
 
   * rtpsrc: rtcp-ttl-mc property added Route RTCP Receiver Reports beyond
     local network segment
