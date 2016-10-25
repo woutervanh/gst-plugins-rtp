@@ -1,3 +1,12 @@
+gst-plugins-barcortp (1.8.3.2) vclub; urgency=medium
+
+  [ Margaritis, Konstantinos ]
+  * Clean up package
+
+  [ Konstantinos Margaritis ]
+
+ -- Konstantinos Margaritis <margaritis@gaiusbaltar>  Tue, 25 Oct 2016 14:38:06 +0200
+
 gst-plugins-barcortp (1.8.3.1) vclub; urgency=medium
 
   * rtpsrc: rtcp-ttl-mc property added Route RTCP Receiver Reports beyond
