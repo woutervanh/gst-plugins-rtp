@@ -2,10 +2,10 @@ Source: gst-plugins-barcortp
 Section: libs
 Priority: optional
 Maintainer: Marc Leeman <marc.leeman@barco.com>
-Uploaders: Marc leeman <marc.leeman@gmail.com>
-Build-Depends: debhelper (>= 9), cdbs, libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, pkg-config (>= 0.26), gstreamer1.0-tools, libgtk2.0-dev, docbook-to-man, cmake, indent, libglib2.0-dev (>=2.35.5), python (>=2.6)
+Uploaders: Marc leeman <marc.leeman@gmail.com>, Konstantinos Margaritis <konstantinos.margaritis@barco.com>
+Build-Depends: debhelper (>= 10), libgstreamer1.0-dev, libgstreamer-plugins-base1.0-dev, pkg-config (>= 0.26), gstreamer1.0-tools, libgtk2.0-dev, docbook-to-man, cmake, indent, libglib2.0-dev (>=2.35.5), python (>=2.6)
 Homepage: http://www.barco.com/
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 
 Package: gstreamer1.0-plugins-barcortp
 Architecture: any
