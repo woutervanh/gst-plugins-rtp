@@ -1,3 +1,19 @@
+gst-plugins-barcortp (1.8.3.4) vclub; urgency=medium
+
+  [ Margaritis, Konstantinos ]
+  * process with wrap-and-sort
+
+  [ Marc Leeman ]
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 09 Nov 2016 15:10:45 +0000
+
+gst-plugins-barcortp (1.8.3.3) vclub; urgency=medium
+
+  [ Konstantinos Margaritis ]
+  * debian: rebuild for 1.10.0 release
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 09 Nov 2016 15:09:58 +0000
+
 gst-plugins-barcortp (1.8.3.2) vclub; urgency=medium
 
   [ Margaritis, Konstantinos ]
