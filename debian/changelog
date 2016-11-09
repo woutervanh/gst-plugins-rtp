@@ -5,7 +5,7 @@ gst-plugins-barcortp (1.10.0.1) vclub; urgency=medium
 
   [ Marc Leeman ]
 
- -- Marc Leeman <marc.leeman@barco.com>  Wed, 09 Nov 2016 15:12:41 +0000
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 09 Nov 2016 15:14:19 +0000
 
 gst-plugins-barcortp (1.8.3.3) vclub; urgency=medium
 
