@@ -1,9 +1,6 @@
-gst-plugins-barcortp (1.8.3.3) vclub; urgency=medium
+gst-plugins-barcortp (1.10.0.1) vclub; urgency=medium
 
-  [ Margaritis, Konstantinos ]
   * process with wrap-and-sort
-
-  [ Marc Leeman ]
 
  -- Marc Leeman <marc.leeman@gmail.com>  Mon, 14 Nov 2016 16:59:17 +0100
 
