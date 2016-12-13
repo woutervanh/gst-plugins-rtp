@@ -2,7 +2,7 @@ gst-plugins-barcortp (1.10.2.1) vclub; urgency=medium
 
   * bump version to 1.10.2
 
- -- Marc Leeman <marc.leeman@barco.com>  Tue, 13 Dec 2016 13:55:10 +0100
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 13 Dec 2016 14:00:30 +0100
 
 gst-plugins-barcortp (1.8.3.2) vclub; urgency=medium
 
