@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.10.2.2) vclub; urgency=medium
+
+  * debian: rebuild for stretch/vclub
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 30 Jan 2017 17:49:28 +0100
+
 gst-plugins-barcortp (1.10.2.1) vclub; urgency=medium
 
   * bump version to 1.10.2
