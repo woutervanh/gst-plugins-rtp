@@ -22,8 +22,6 @@ enum
   PROP_CAPS,
   PROP_ENABLE_RTCP,
   PROP_ENCODING_NAME,
-  PROP_ENCRYPT,
-  PROP_KEY_DERIV_RATE,
   PROP_LATENCY,
   PROP_MULTICAST_IFACE,
   PROP_PT_CHANGE,
@@ -42,8 +40,6 @@ enum
 #define DEFAULT_BUFFER_SIZE           (0)
 #define DEFAULT_ENABLE_RTCP           (TRUE)
 #define DEFAULT_PROP_MULTICAST_IFACE  (NULL)
-#define DEFAULT_PROP_ENCRYPT          (FALSE)
-#define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 #define DEFAULT_PROP_TIMEOUT          (0)
 #define DEFAULT_PROP_RTCP_TTL_MC      (1)
 
@@ -181,32 +177,6 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "Post a message after timeout microseconds (0 = disabled)", 0,
           G_MAXUINT64, DEFAULT_PROP_TIMEOUT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSrc::encrypt
-   *
-   * Are RTP packets encrypted using AES?
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_ENCRYPT,
-      g_param_spec_boolean ("encrypt", "Data encrypted",
-          "Data are encrypted using AES", DEFAULT_PROP_ENCRYPT,
-          G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::rate
-   *
-   * Key derivation rate for AES
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_KEY_DERIV_RATE,
-      g_param_spec_uint ("rate",
-          "Key derivation rate",
-          "Key derivation rate (This value should be a power of 2)"
-          " (not yet implemented)",
-          0, G_MAXUINT32, DEFAULT_PROP_KEY_DERIV_RATE, G_PARAM_READWRITE));
 
   /**
    * GstRtpSrc::pt-change
@@ -413,16 +383,6 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
       GST_DEBUG_OBJECT (self, "set buffer-size: %u", self->buffer_size);
       xgst_barco_propagate_setting (self, "buffer-size", self->buffer_size);
       break;
-    case PROP_ENCRYPT:
-      self->encrypt = g_value_get_boolean (value);
-      GST_DEBUG_OBJECT (self, "set encrypt: %d", self->encrypt);
-      break;
-    case PROP_KEY_DERIV_RATE:
-      self->key_derivation_rate = g_value_get_uint (value);
-      if (self->rtpdecrypt)
-        g_object_set (G_OBJECT (self->rtpdecrypt), "rate",
-            self->key_derivation_rate, NULL);
-      break;
     case PROP_TIMEOUT:
       self->timeout = g_value_get_uint64 (value);
       xgst_barco_propagate_setting (self, "timeout", self->timeout);
@@ -516,12 +476,6 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
       break;
     case PROP_BUFFER_SIZE:
       g_value_set_uint (value, self->buffer_size);
-      break;
-    case PROP_ENCRYPT:
-      g_value_set_boolean (value, self->encrypt);
-      break;
-    case PROP_KEY_DERIV_RATE:
-      g_value_set_uint (value, self->key_derivation_rate);
       break;
     case PROP_TIMEOUT:
       g_value_set_uint64 (value, self->timeout);
@@ -867,11 +821,6 @@ gst_rtp_src_start (GstRtpSrc * self)
     g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
   }
 
-  if (G_UNLIKELY (self->encrypt)) {
-    self->rtpdecrypt = gst_element_factory_make ("rtpdecrypt", NULL);
-    g_return_val_if_fail (self->rtpdecrypt != NULL, FALSE);
-  }
-
   if (G_UNLIKELY (self->pt_select > 0) ||
       G_UNLIKELY (self->pt_change > 0) ||
       G_UNLIKELY (self->ssrc_select > 0) ||
@@ -944,20 +893,9 @@ gst_rtp_src_start (GstRtpSrc * self)
       "autoremove", TRUE,
       "ignore-pt", self->pt_change, "latency", self->latency, NULL);
 
-  if (self->rtpdecrypt)
-    g_object_set (G_OBJECT (self->rtpdecrypt), "rate",
-        self->key_derivation_rate, NULL);
-
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (self), self->rtp_src, self->rtpbin, NULL);
   lastelt = self->rtp_src;
-  if (self->rtpdecrypt) {
-    GST_DEBUG_OBJECT (self, "Adding decryption");
-    gst_bin_add (GST_BIN (self), self->rtpdecrypt);
-    gst_element_link (lastelt, self->rtpdecrypt);
-
-    lastelt = self->rtpdecrypt;
-  }
   if (self->rtpheaderchange) {
     GST_DEBUG_OBJECT (self, "Adding PT change");
     gst_bin_add (GST_BIN (self), self->rtpheaderchange);
@@ -993,17 +931,6 @@ gst_rtp_src_start (GstRtpSrc * self)
     self->rtp_src = NULL;
     // FIXME: cleanup modules
     return FALSE;
-  }
-
-  if(self->rtpdecrypt){
-    ret = gst_element_set_state (self->rtpdecrypt, GST_STATE_READY);
-    if (ret == GST_STATE_CHANGE_FAILURE){
-      GST_ERROR_OBJECT (self, "Could not set RTP decrypt to READY");
-
-      gst_element_set_state (self->rtpdecrypt, GST_STATE_NULL);
-      gst_object_unref (self->rtpdecrypt);
-      self->rtpdecrypt = NULL;
-    }
   }
 
   if(self->rtpheaderchange){
@@ -1154,8 +1081,6 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->buffer_size = DEFAULT_BUFFER_SIZE;
   self->latency = DEFAULT_LATENCY_MS;
   self->timeout = DEFAULT_PROP_TIMEOUT;
-  self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
-  self->encrypt = DEFAULT_PROP_ENCRYPT;
   self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
   self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
