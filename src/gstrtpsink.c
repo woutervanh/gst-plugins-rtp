@@ -20,7 +20,7 @@ enum
   PROP_TTL_MC,
   PROP_SRC_PORT,
   PROP_ENCRYPT,
-  PROP_KEY_DERIV_RATE,
+  PROP_NPADS,
   PROP_LAST
 };
 
@@ -33,9 +33,9 @@ enum
 #define LOCAL_ADDRESS_IPV6			      "::"      /* "::1" */
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
 
-static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("sink",
+static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink%d",
     GST_PAD_SINK,
-    GST_PAD_ALWAYS,
+    GST_PAD_REQUEST,
     GST_STATIC_CAPS ("application/x-rtp"));
 
 static void gst_rtp_sink_uri_handler_init (gpointer g_iface,
@@ -51,9 +51,43 @@ static void gst_rtp_sink_set_property (GObject * object, guint prop_id,
 static void gst_rtp_sink_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 static void gst_rtp_sink_finalize (GObject * gobject);
-static GstStateChangeReturn
-gst_rtp_sink_change_state (GstElement * element, GstStateChange transition);
 static gboolean gst_rtp_sink_is_multicast (const gchar * ip_addr);
+static GstPad*
+gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name);
+
+static GstPad *
+gst_rtp_sink_request_new_pad (GstElement * element,
+    GstPadTemplate * temp, const gchar * name, const GstCaps * caps)
+{
+  GstRtpSink *self = GST_RTP_SINK (element);
+  GstPad *ghost = NULL;
+
+  GST_DEBUG_OBJECT (self, "Request new pad with caps: %" GST_PTR_FORMAT, caps);
+  g_return_val_if_fail (self->uri != NULL, NULL);
+
+  ghost = gst_rtp_sink_create_rtpbin_chain (self, name);
+
+  /* Increment the number of pads that is being used. */
+  self->npads++;
+  return ghost;
+}
+static void
+gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
+{
+  gchar *name = gst_pad_get_name (pad);
+  GstRtpSink *self = GST_RTP_SINK (element);
+
+  GST_DEBUG_OBJECT (self, "Release pad with name %s", name);
+
+  g_return_if_fail (GST_IS_GHOST_PAD (pad));
+  g_return_if_fail (GST_IS_RTP_SINK (element));
+
+  /* FIXME: clean up the pipeline that was generated as a result of
+   * requesting a pad */
+  self->npads--;
+
+  g_free (name);
+}
 
 static void
 gst_rtp_sink_class_init (GstRtpSinkClass * klass)
@@ -64,6 +98,11 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
   oclass->set_property = gst_rtp_sink_set_property;
   oclass->get_property = gst_rtp_sink_get_property;
   oclass->finalize = gst_rtp_sink_finalize;
+
+  gstelement_class->request_new_pad =
+      GST_DEBUG_FUNCPTR (gst_rtp_sink_request_new_pad);
+
+  gstelement_class->release_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_release_pad);
 
   /**
    * GstRtpSink::uri
@@ -120,10 +159,7 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
 
   gst_element_class_add_pad_template (gstelement_class,
-      gst_static_pad_template_get (&src_template));
-
-  gstelement_class->change_state =
-      GST_DEBUG_FUNCPTR (gst_rtp_sink_change_state);
+      gst_static_pad_template_get (&sink_template));
 
   gst_element_class_set_static_metadata (gstelement_class,
       "RtpSink",
@@ -293,11 +329,8 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
     case PROP_SRC_PORT:
       g_value_set_int (value, self->src_port);
       break;
-    case PROP_ENCRYPT:
-      g_value_set_boolean (value, self->encrypt);
-      break;
-    case PROP_KEY_DERIV_RATE:
-      g_value_set_uint (value, self->key_derivation_rate);
+    case PROP_NPADS:
+      g_value_set_uint (value, self->npads);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -415,11 +448,15 @@ gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
   gst_rtp_sink_find_property ("rtcp-min-interval", (guint64) 500000000);
 }
 
-static gboolean
-gst_rtp_sink_start (GstRtpSink * self)
+/* The purpose of this code is to spawn the part of the pipeline that
+ * will handle RTP. It is added in an rtp request pad since, later on,
+ * multiple streams should be added into the same RTP session */
+static GstPad*
+gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
 {
   GstElement *rtpbin;
   GstPad *pad;
+  GstPad *ghost;
   GstCaps *caps = NULL;
   gchar *uri = NULL;
 
@@ -507,36 +544,12 @@ gst_rtp_sink_start (GstRtpSink * self)
   if (!gst_element_sync_state_with_parent (self->rtcp_sink))
     GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
 
-  return TRUE;
-}
+  ghost = gst_ghost_pad_new (name, pad);
+  gst_object_unref(pad);
+  gst_pad_set_active(ghost, TRUE);
+  gst_element_add_pad(GST_ELEMENT (self), ghost);
 
-static GstStateChangeReturn
-gst_rtp_sink_change_state (GstElement * element, GstStateChange transition)
-{
-  GstRtpSink *self = GST_RTP_SINK (element);
-
-  switch (transition) {
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
-      GST_DEBUG_OBJECT (self, "Configuring rtpsink");
-      if (!gst_rtp_sink_start (self)) {
-        GST_DEBUG_OBJECT (self, "Start failed");
-        return GST_STATE_CHANGE_FAILURE;
-      }
-      break;
-    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-      break;
-    case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
-      break;
-    case GST_STATE_CHANGE_PAUSED_TO_READY:
-    {
-      GST_DEBUG_OBJECT (self, "Shutting down");
-    }
-      break;
-    default:
-      break;
-  }
-
-  return GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+  return ghost;
 }
 
 static void

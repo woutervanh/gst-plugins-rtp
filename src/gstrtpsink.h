@@ -25,6 +25,7 @@ struct _GstRtpSink
   GstBin parent_instance;
 
   GstUri *uri;
+  gint npads;
   gchar *last_uri;
 
   GSocket *rtp_sink_socket;
