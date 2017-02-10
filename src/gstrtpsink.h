@@ -34,14 +34,10 @@ struct _GstRtpSink
   gint ttl_mc;
   gint pt;
   gint src_port;
-  gboolean encrypt;
-  guint32 key_derivation_rate;
 
   GstElement *rtp_sink;
   GstElement *rtcp_sink;
   GstElement *rtcp_src;
-  GstElement *rtpencrypt;
-  GstPad *sinkpad;
 };
 
 GType
