@@ -34,8 +34,6 @@ struct _GstRtpSrc
   gchar *multicast_iface;
   guint buffer_size;
   guint latency;
-  gboolean encrypt;
-  guint32 key_derivation_rate;
   guint64 timeout;
 
   gboolean enable_rtcp;
@@ -46,7 +44,6 @@ struct _GstRtpSrc
   GstElement *rtcp_sink;
   GstElement *rtpbin;
   GstElement *rtpheaderchange;
-  GstElement *rtpdecrypt;
   GstCaps *caps;
 
   gint n_ptdemux_pads;
