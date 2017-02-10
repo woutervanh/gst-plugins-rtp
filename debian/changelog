@@ -1,3 +1,11 @@
+gst-plugins-barcortp (1.10.2.3) vclub; urgency=medium
+
+  * rtpsrc: remove dependencies on encrypt/decrypt
+  * sdpsink: remove encrypt
+  * rtpsink: convert to request sink pad
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 10 Feb 2017 16:29:04 +0100
+
 gst-plugins-barcortp (1.10.2.2) vclub; urgency=medium
 
   * debian: rebuild for stretch/vclub
