@@ -32,7 +32,6 @@ enum
 #define LOCAL_ADDRESS_IPV4			      "0.0.0.0" /* "127.0.0.1" */
 #define LOCAL_ADDRESS_IPV6			      "::"      /* "::1" */
 #define DEFAULT_PROP_ENCRYPT          (FALSE)
-#define DEFAULT_PROP_KEY_DERIV_RATE   (0)
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
@@ -116,31 +115,9 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           0, 65535, DEFAULT_SRC_PORT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
-  /**
-   * GstRtpSink::encrypt
-   *
-   * Are RTP packets encrypted using AES?
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_ENCRYPT,
-      g_param_spec_boolean ("encrypt", "Data encrypted",
-          "Data are encrypted using AES", DEFAULT_PROP_ENCRYPT,
-          G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSink::rate
-   *
-   * Key derivation rate for AES
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_KEY_DERIV_RATE,
-      g_param_spec_uint ("rate",
-          "Key derivation rate",
-          "Key derivation rate (This value should be a power of 2)"
-          " (not yet implemented)",
-          0, G_MAXUINT32, DEFAULT_PROP_KEY_DERIV_RATE, G_PARAM_READWRITE));
+  g_object_class_install_property (oclass, PROP_NPADS,
+      g_param_spec_uint ("n-pads", "Number of sink pads",
+          "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
 
   gst_element_class_add_pad_template (gstelement_class,
       gst_static_pad_template_get (&src_template));
@@ -284,15 +261,6 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
       close_and_unref_socket (self->rtp_sink_socket);
       gst_rtp_sink_create_and_bind_rtp_socket (self);
       break;
-    case PROP_ENCRYPT:
-      self->encrypt = g_value_get_boolean (value);
-      break;
-    case PROP_KEY_DERIV_RATE:
-      self->key_derivation_rate = g_value_get_uint (value);
-      if (self->rtpencrypt)
-        g_object_set (G_OBJECT (self->rtpencrypt), "rate",
-            self->key_derivation_rate, NULL);
-      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -369,7 +337,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
     gst_caps_unref (caps);
   }
 
-  elt = (self->encrypt) ? self->rtpencrypt : self->rtp_sink;
+  elt = self->rtp_sink;
 
   target = gst_element_get_static_pad (elt, "sink");
   if (gst_pad_is_linked (target)) {
@@ -466,13 +434,6 @@ gst_rtp_sink_start (GstRtpSink * self)
   g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
   g_return_val_if_fail (self->rtcp_src != NULL, FALSE);
 
-  if (self->encrypt) {
-    self->rtpencrypt = gst_element_factory_make ("rtpencrypt", NULL);
-    g_return_val_if_fail (self->rtpencrypt != NULL, FALSE);
-    g_object_set (G_OBJECT (self->rtpencrypt), "rate",
-        self->key_derivation_rate, NULL);
-  }
-
   /* Set properties */
   g_object_set (G_OBJECT (self->rtp_sink),
       "async", FALSE,
@@ -522,11 +483,6 @@ gst_rtp_sink_start (GstRtpSink * self)
   gst_bin_add_many (GST_BIN (self), rtpbin,
       self->rtp_sink, self->rtcp_sink, self->rtcp_src, NULL);
 
-  if (self->encrypt) {
-    gst_bin_add (GST_BIN (self), self->rtpencrypt);
-    gst_element_link (self->rtpencrypt, self->rtp_sink);
-  }
-
   GST_DEBUG_OBJECT (rtpbin, "Connecting pads");
   pad = gst_element_get_request_pad (rtpbin, "send_rtp_sink_0");
   gst_element_link_pads (rtpbin, "send_rtp_src_0", self->rtp_sink, "sink");
@@ -535,13 +491,7 @@ gst_rtp_sink_start (GstRtpSink * self)
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
 
-  GST_DEBUG_OBJECT (self, "Setting and connecting ghostpad");
-  gst_ghost_pad_set_target (GST_GHOST_PAD (self->sinkpad), pad);
-  gst_object_unref (pad);
-
   gst_element_sync_state_with_parent (GST_ELEMENT (rtpbin));
-  if (self->encrypt)
-    gst_element_sync_state_with_parent (self->rtpencrypt);
   gst_element_sync_state_with_parent (self->rtp_sink);
 
   /** The order of these lines is really important **/
@@ -603,17 +553,13 @@ gst_rtp_sink_finalize (GObject * gobject)
 static void
 gst_rtp_sink_init (GstRtpSink * self)
 {
+  self->npads = 0;
   self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
   self->src_port = DEFAULT_SRC_PORT;
   self->rtp_sink_socket = NULL;
   self->rtcp_src_socket = NULL;
-  self->encrypt = DEFAULT_PROP_ENCRYPT;
-  self->key_derivation_rate = DEFAULT_PROP_KEY_DERIV_RATE;
-
-  self->sinkpad = gst_ghost_pad_new_no_target ("sink", GST_PAD_SINK);
-  gst_element_add_pad (GST_ELEMENT (self), self->sinkpad);
 
   GST_OBJECT_FLAG_SET (GST_OBJECT (self), GST_ELEMENT_FLAG_SINK);
   GST_DEBUG_OBJECT (self, "rtpsink initialised");
