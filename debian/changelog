@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.10.2.4) vclub; urgency=medium
+
+  * rtspsrc: check module creation
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 16 Feb 2017 15:39:11 +0100
+
 gst-plugins-barcortp (1.10.2.3) vclub; urgency=medium
 
   * rtpsrc: remove dependencies on encrypt/decrypt
