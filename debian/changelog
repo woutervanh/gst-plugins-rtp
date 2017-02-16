@@ -4,7 +4,7 @@ gst-plugins-barcortp (1.10.2.3) vclub; urgency=medium
   * sdpsink: remove encrypt
   * rtpsink: convert to request sink pad
 
- -- Marc Leeman <marc.leeman@barco.com>  Thu, 16 Feb 2017 15:19:47 +0100
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 16 Feb 2017 15:34:33 +0100
 
 gst-plugins-barcortp (1.10.2.2) vclub; urgency=medium
 
