@@ -331,6 +331,7 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 {
   GSocket *rtcpfd;
 
+  g_return_val_if_fail (self->rtp_src != NULL, FALSE);
   g_object_get (G_OBJECT (self->rtcp_src), "used-socket", &rtcpfd, NULL);
 
   if (!G_IS_SOCKET (rtcpfd))
@@ -990,6 +991,8 @@ gst_rtp_src_start (GstRtpSrc * self)
     gst_element_set_state (self->rtp_src, GST_STATE_NULL);
     gst_object_unref (self->rtp_src);
     self->rtp_src = NULL;
+    // FIXME: cleanup modules
+    return FALSE;
   }
 
   if(self->rtpdecrypt){
@@ -1027,15 +1030,17 @@ gst_rtp_src_start (GstRtpSrc * self)
 
     ret = gst_element_set_state (self->rtcp_src, GST_STATE_READY);
     if (ret == GST_STATE_CHANGE_FAILURE){
-      GST_ERROR_OBJECT (self, "Could not set RTP src to READY");
+      GST_ERROR_OBJECT (self, "Could not set RTCP source to READY");
 
       gst_element_set_state (self->rtcp_src, GST_STATE_NULL);
       gst_object_unref (self->rtcp_src);
       self->rtcp_src = NULL;
+      return FALSE;
     }
 
     /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
     rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (self);
+    g_return_val_if_fail (rtcpfd != NULL, FALSE);
     g_object_set (G_OBJECT (self->rtcp_sink),
         "socket", rtcpfd,
         "ttl-mc", self->rtcp_ttl_mc,
