@@ -1,3 +1,15 @@
+gst-plugins-barcortp (1.10.2.1+tigh2) tigh; urgency=medium
+
+  * rtspsrc: check module creation
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 17 Feb 2017 10:40:38 +0100
+
+gst-plugins-barcortp (1.10.2.1+tigh1) tigh; urgency=medium
+
+  * branch into tigh
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 17 Feb 2017 10:39:55 +0100
+
 gst-plugins-barcortp (1.10.2.1) vclub; urgency=medium
 
   * bump version to 1.10.2
