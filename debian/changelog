@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.10.4~barco9+1) stretch-barco-testing; urgency=medium
+
+  * rtp: use gst_object_set_properties_from_uri_query_parameters
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 09 Mar 2017 12:04:36 +0100
+
 gst-plugins-barcortp (1.10.2.4) vclub; urgency=medium
 
   * rtspsrc: check module creation
