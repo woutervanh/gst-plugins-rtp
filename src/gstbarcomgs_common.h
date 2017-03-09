@@ -41,8 +41,6 @@
     gst_iterator_free(it); \
   }
 
-gboolean gst_barco_query_to_boolean(gchar * value);
 gboolean gst_barco_is_ipv4(GstUri *uri);
-void gst_barco_parse_uri (GObject * obj, GstUri* uri, GstDebugCategory * cat);
 
 #endif
