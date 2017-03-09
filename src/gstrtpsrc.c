@@ -326,7 +326,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         gst_uri_unref (self->uri);
       self->uri = gst_uri_from_string (g_value_get_string (value));
 
-      gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
+      gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
       if (self->rtp_src) {
         uri = g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri), gst_uri_get_port(self->uri));
         g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);

@@ -266,14 +266,6 @@ close_and_unref_socket (GSocket * socket)
 }
 
 static void
-gst_rtp_sink_check_uri (GstRtpSink * self)
-{
-  if (self->uri) {
-    gst_barco_parse_uri (G_OBJECT (self), self->uri, GST_CAT_DEFAULT);
-  }
-}
-
-static void
 gst_rtp_sink_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec)
 {
@@ -284,7 +276,9 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
       if (self->uri)
         gst_uri_unref (self->uri);
       self->uri = gst_uri_from_string (g_value_get_string (value));
-      gst_rtp_sink_check_uri (self);
+      if(self->uri){
+        gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
+      }
       break;
     case PROP_TTL:
       self->ttl = g_value_get_int (value);
