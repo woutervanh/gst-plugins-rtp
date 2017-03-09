@@ -37,7 +37,7 @@ gst-plugins-barcortp (1.8.3.2) vclub; urgency=medium
 
   [ Konstantinos Margaritis ]
 
- -- Konstantinos Margaritis <margaritis@gaiusbaltar>  Tue, 25 Oct 2016 14:38:06 +0200
+ -- Konstantinos Margaritis <konstantinos.margaritis@barco.com>  Tue, 25 Oct 2016 14:38:06 +0200
 
 gst-plugins-barcortp (1.8.3.1) vclub; urgency=medium
 
