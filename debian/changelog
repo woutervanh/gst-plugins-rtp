@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.10.4~barco9+3) stretch-barco-testing; urgency=medium
+
+  * debian: add proprietary copyright
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 15 Mar 2017 11:16:25 +0100
+
 gst-plugins-barcortp (1.10.4~barco9+2) stretch-barco-testing; urgency=medium
 
   * debian: add linitan override for bad distribution
