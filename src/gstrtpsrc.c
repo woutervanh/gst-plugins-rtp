@@ -452,18 +452,13 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
 
   switch (prop_id) {
     case PROP_URI:
-      if (self->uri) {
-        gchar *string = gst_uri_to_string (self->uri);
-
-        g_value_set_string (value, string);
-        g_free (string);
-      } else {
+      if (self->uri)
+        g_value_take_string (value, gst_uri_to_string (self->uri));
+      else
         g_value_set_string (value, NULL);
-      }
       break;
     case PROP_ENCODING_NAME:
       g_value_set_string (value, self->encoding_name);
-      break;
       break;
     case PROP_LATENCY:
       g_value_set_uint (value, self->latency);

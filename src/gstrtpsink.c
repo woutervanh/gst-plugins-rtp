@@ -305,14 +305,10 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
 
   switch (prop_id) {
     case PROP_URI:
-      if (self->uri) {
-        gchar *string = gst_uri_to_string (self->uri);
-
-        g_value_set_string (value, string);
-        g_free (string);
-      } else {
+      if (self->uri)
+        g_value_take_string (value, gst_uri_to_string (self->uri));
+      else
         g_value_set_string (value, NULL);
-      }
       break;
     case PROP_TTL:
       g_value_set_int (value, self->ttl);
