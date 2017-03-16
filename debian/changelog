@@ -1,8 +1,14 @@
+gst-plugins-barcortp (1.10.4~barco9+4) stretch-barco-testing; urgency=medium
+
+  * all: use g_value_take_string when taking ownership
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 16 Mar 2017 15:08:34 +0100
+
 gst-plugins-barcortp (1.10.4~barco9+3) stretch-barco-testing; urgency=medium
 
   * debian: add proprietary copyright
 
- -- Marc Leeman <marc.leeman@barco.com>  Wed, 15 Mar 2017 11:16:25 +0100
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 16 Mar 2017 14:57:03 +0100
 
 gst-plugins-barcortp (1.10.4~barco9+2) stretch-barco-testing; urgency=medium
 
