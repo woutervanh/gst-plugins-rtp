@@ -24,7 +24,7 @@ enum
   PROP_LAST
 };
 
-#define DEFAULT_PROP_URI    		      "udp://0.0.0.0:5004"
+#define DEFAULT_PROP_URI    		      "rtp://0.0.0.0:5004"
 #define DEFAULT_PROP_MUXER  		      NULL
 #define DEFAULT_PROP_TTL              (64)
 #define DEFAULT_PROP_TTL_MC           (8)
