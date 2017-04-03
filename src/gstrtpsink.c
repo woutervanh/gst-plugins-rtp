@@ -449,13 +449,36 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
   GstCaps *caps = NULL;
   gchar *uri = NULL;
 
+  if (self->rtpbin == NULL){
+    GST_INFO_OBJECT(self, "Initialising rtpbin element.");
+
+    self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
+    g_return_val_if_fail (self->rtpbin != NULL, FALSE);
+
+    if (g_object_class_find_property (G_OBJECT_GET_CLASS (self->rtpbin),
+          "use-pipeline-clock")) {
+      g_object_set (G_OBJECT (self->rtpbin), "use-pipeline-clock", TRUE, NULL);
+    } else {
+      GST_WARNING_OBJECT (self,
+          "rtpbin has no use-pipeline-clock, running old version?");
+    }
+
+    GST_DEBUG_OBJECT (self, "Connecting callbacks");
+    g_signal_connect (self->rtpbin, "pad-added",
+        G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
+    g_signal_connect (self->rtpbin, "element-added",
+        G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
+
+    gst_bin_add_many (GST_BIN (self), self->rtpbin, NULL);
+
+    gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
+  }
+
   GST_DEBUG_OBJECT (self, "Creating correct modules");
-  self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
   self->rtp_sink = gst_element_factory_make ("udpsink", NULL);
   self->rtcp_sink = gst_element_factory_make ("udpsink", NULL);
   self->rtcp_src = gst_element_factory_make ("udpsrc", NULL);
 
-  g_return_val_if_fail (self->rtpbin != NULL, FALSE);
   g_return_val_if_fail (self->rtp_sink != NULL, FALSE);
   g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
   g_return_val_if_fail (self->rtcp_src != NULL, FALSE);
@@ -492,33 +515,35 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
       "caps", caps, "auto-multicast", TRUE, NULL);
   gst_caps_unref (caps);
 
-  if (g_object_class_find_property (G_OBJECT_GET_CLASS (self->rtpbin),
-          "use-pipeline-clock")) {
-    g_object_set (G_OBJECT (self->rtpbin), "use-pipeline-clock", TRUE, NULL);
-  } else {
-    GST_WARNING_OBJECT (self,
-        "rtpbin has no use-pipeline-clock, running old version?");
+  gst_bin_add_many (GST_BIN (self), self->rtp_sink, self->rtcp_sink, self->rtcp_src, NULL);
+
+  {
+    /* Link the udp sources and sinks to the rtp bin element. This should
+       be done for each stream that is added while only using one single
+       rtpbin element. */
+    gchar *name;
+    GST_DEBUG_OBJECT (self, "Connecting pads");
+
+    name = g_strdup_printf ("send_rtp_sink_%d", self->npads);
+    pad = gst_element_get_request_pad (self->rtpbin, name);
+    g_free(name);
+
+    name = g_strdup_printf ("send_rtp_src_%d", self->npads);
+    gst_element_link_pads (self->rtpbin, name, self->rtp_sink, "sink");
+    g_free(name);
+
+    name = g_strdup_printf ("send_rtcp_src_%d", self->npads);
+    gst_element_link_pads (self->rtpbin, name, self->rtcp_sink, "sink");
+    g_free(name);
+
+    name = g_strdup_printf ("send_rtcp_sink_%d", self->npads);
+    gst_element_link_pads (self->rtcp_src, "src", self->rtpbin, name);
+    g_free(name);
   }
-
-  GST_DEBUG_OBJECT (self, "Connecting callbacks");
-  g_signal_connect (self->rtpbin, "pad-added",
-      G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
-  g_signal_connect (self->rtpbin, "element-added",
-      G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
-
-  gst_bin_add_many (GST_BIN (self), self->rtpbin,
-      self->rtp_sink, self->rtcp_sink, self->rtcp_src, NULL);
-
-  GST_DEBUG_OBJECT (self->rtpbin, "Connecting pads");
-  pad = gst_element_get_request_pad (self->rtpbin, "send_rtp_sink_0");
-  gst_element_link_pads (self->rtpbin, "send_rtp_src_0", self->rtp_sink, "sink");
-  gst_element_link_pads (self->rtpbin, "send_rtcp_src_0", self->rtcp_sink, "sink");
-  gst_element_link_pads (self->rtcp_src, "src", self->rtpbin, "recv_rtcp_sink_0");
 
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
 
-  gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
   gst_element_sync_state_with_parent (self->rtp_sink);
 
   /** The order of these lines is really important **/
@@ -557,6 +582,7 @@ static void
 gst_rtp_sink_init (GstRtpSink * self)
 {
   self->npads = 0;
+  self->rtpbin = NULL;
   self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
