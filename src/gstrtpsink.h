@@ -31,6 +31,7 @@ struct _GstRtpSink
   GSocket *rtp_sink_socket;
 	GSocket *rtcp_src_socket;
 
+  guint cidr;
   gint ttl;
   gint ttl_mc;
   gint pt;

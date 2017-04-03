@@ -16,6 +16,7 @@ enum
 {
   PROP_0,
   PROP_URI,
+  PROP_CIDR,
   PROP_TTL,
   PROP_TTL_MC,
   PROP_SRC_PORT,
@@ -26,6 +27,7 @@ enum
 
 #define DEFAULT_PROP_URI    		      "rtp://0.0.0.0:5004"
 #define DEFAULT_PROP_MUXER  		      NULL
+#define DEFAULT_PROP_CIDR             (32)
 #define DEFAULT_PROP_TTL              (64)
 #define DEFAULT_PROP_TTL_MC           (8)
 #define DEFAULT_SRC_PORT              (0)
@@ -154,6 +156,19 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           0, 65535, DEFAULT_SRC_PORT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * GstRtpSink::cidr
+   *
+   * CIDR Network Mask (for use in routed networks)
+   *
+   * Since: 1.10.0
+   */
+  g_object_class_install_property (oclass, PROP_CIDR,
+      g_param_spec_uint ("cidr", "CIDR Network Mask",
+          "CIDR Network Mask",
+          0, 32, DEFAULT_PROP_CIDR,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
   g_object_class_install_property (oclass, PROP_NPADS,
       g_param_spec_uint ("n-pads", "Number of sink pads",
           "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
@@ -280,6 +295,9 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
         gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
       }
       break;
+    case PROP_CIDR:
+      self->cidr = g_value_get_uint (value);
+      break;
     case PROP_TTL:
       self->ttl = g_value_get_int (value);
       break;
@@ -309,6 +327,9 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
         g_value_take_string (value, gst_uri_to_string (self->uri));
       else
         g_value_set_string (value, NULL);
+      break;
+    case PROP_CIDR:
+      g_value_set_uint (value, self->cidr);
       break;
     case PROP_TTL:
       g_value_set_int (value, self->ttl);
@@ -584,6 +605,7 @@ gst_rtp_sink_init (GstRtpSink * self)
   self->npads = 0;
   self->rtpbin = NULL;
   self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
+  self->cidr = DEFAULT_PROP_CIDR;
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
   self->src_port = DEFAULT_SRC_PORT;
