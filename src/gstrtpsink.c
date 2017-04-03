@@ -5,6 +5,7 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 
 #include "gstrtpsink.h"
 #include "gstbarcomgs_common.h"
@@ -16,6 +17,7 @@ enum
 {
   PROP_0,
   PROP_URI,
+  PROP_CIDR,
   PROP_TTL,
   PROP_TTL_MC,
   PROP_SRC_PORT,
@@ -26,6 +28,7 @@ enum
 
 #define DEFAULT_PROP_URI    		      "rtp://0.0.0.0:5004"
 #define DEFAULT_PROP_MUXER  		      NULL
+#define DEFAULT_PROP_CIDR             (32)
 #define DEFAULT_PROP_TTL              (64)
 #define DEFAULT_PROP_TTL_MC           (8)
 #define DEFAULT_SRC_PORT              (0)
@@ -154,6 +157,19 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           0, 65535, DEFAULT_SRC_PORT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * GstRtpSink::cidr
+   *
+   * CIDR Network Mask (for use in routed networks)
+   *
+   * Since: 1.10.0
+   */
+  g_object_class_install_property (oclass, PROP_CIDR,
+      g_param_spec_uint ("cidr", "CIDR Network Mask",
+          "CIDR Network Mask",
+          0, 32, DEFAULT_PROP_CIDR,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
   g_object_class_install_property (oclass, PROP_NPADS,
       g_param_spec_uint ("n-pads", "Number of sink pads",
           "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
@@ -280,6 +296,9 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
         gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
       }
       break;
+    case PROP_CIDR:
+      self->cidr = g_value_get_uint (value);
+      break;
     case PROP_TTL:
       self->ttl = g_value_get_int (value);
       break;
@@ -309,6 +328,9 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
         g_value_take_string (value, gst_uri_to_string (self->uri));
       else
         g_value_set_string (value, NULL);
+      break;
+    case PROP_CIDR:
+      g_value_set_uint (value, self->cidr);
       break;
     case PROP_TTL:
       g_value_set_int (value, self->ttl);
@@ -483,32 +505,58 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
   g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
   g_return_val_if_fail (self->rtcp_src != NULL, FALSE);
 
-  /* Set properties */
-  g_object_set (G_OBJECT (self->rtp_sink),
-      "async", FALSE,
-      "ttl", self->ttl,
-      "ttl-mc", self->ttl_mc,
-      "host", gst_uri_get_host(self->uri), "port", gst_uri_get_port(self->uri),
-      "socket", self->rtp_sink_socket, "auto-multicast", TRUE, NULL);
+  /* Adjust the URI to match with the CIDR notation */
+  {
+    GstUri *luri = gst_uri_copy(self->uri);
+    const gchar* host = gst_uri_get_host(luri);
+    gchar *nhost;
+    guint u[4];
+    guint v=0;
 
-  /* auto-multicast should be set to false as rtcp_src will already
-   * join the multicast group */
-  g_object_set (G_OBJECT (self->rtcp_sink),
-      "sync", FALSE,
-      "async", FALSE,
-      "ttl", self->ttl,
-      "ttl-mc", self->ttl_mc,
-      "host", gst_uri_get_host(self->uri), "port", gst_uri_get_port(self->uri) + 1,
-      "close-socket", FALSE, "auto-multicast", FALSE, NULL);
+    if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
 
-  if (gst_rtp_sink_is_multicast (gst_uri_get_host(self->uri))) {
-    uri = g_strdup_printf ("udp://%s:%u",
-        gst_uri_get_host(self->uri), gst_uri_get_port(self->uri) + 1);
-    g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
-    g_free (uri);
-  } else
-    g_object_set (G_OBJECT (self->rtcp_src), "port", gst_uri_get_port(self->uri) + 1,
-        NULL);
+      GST_DEBUG_OBJECT(self, "Scanned %d.%d.%d.%d", u[0], u[1], u[2], u[3]);
+      v = (u[0]<<24) | (u[1]<<16) | (u[2]<<8) | u[3];
+      v++;
+
+      nhost = g_strdup_printf("%d.%d.%d.%d",
+          (v>>24), (v>>16)&0xff, (v>>8)&0xff, (v&0xff));
+
+      GST_INFO_OBJECT(self, "Updating host location from %s to %s.", host, nhost);
+      GST_FIXME_OBJECT(self, "Implement CIDR checking.");
+      gst_uri_set_host(luri, nhost);
+      g_free(nhost);
+    }
+
+    /* Set properties */
+    g_object_set (G_OBJECT (self->rtp_sink),
+        "async", FALSE,
+        "ttl", self->ttl,
+        "ttl-mc", self->ttl_mc,
+        "host", gst_uri_get_host(luri), "port", gst_uri_get_port(luri),
+        "socket", self->rtp_sink_socket, "auto-multicast", TRUE, NULL);
+
+    /* auto-multicast should be set to false as rtcp_src will already
+     * join the multicast group */
+    g_object_set (G_OBJECT (self->rtcp_sink),
+        "sync", FALSE,
+        "async", FALSE,
+        "ttl", self->ttl,
+        "ttl-mc", self->ttl_mc,
+        "host", gst_uri_get_host(luri), "port", gst_uri_get_port(luri) + 1,
+        "close-socket", FALSE, "auto-multicast", FALSE, NULL);
+
+    if (gst_rtp_sink_is_multicast (gst_uri_get_host(luri))) {
+      uri = g_strdup_printf ("udp://%s:%u",
+          gst_uri_get_host(luri), gst_uri_get_port(luri) + 1);
+      g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
+      g_free (uri);
+    } else
+      g_object_set (G_OBJECT (self->rtcp_src), "port", gst_uri_get_port(luri) + 1,
+          NULL);
+
+    gst_uri_unref(luri);
+  }
 
   caps = gst_caps_from_string ("application/x-rtcp");
   g_object_set (G_OBJECT (self->rtcp_src),
@@ -584,6 +632,7 @@ gst_rtp_sink_init (GstRtpSink * self)
   self->npads = 0;
   self->rtpbin = NULL;
   self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
+  self->cidr = DEFAULT_PROP_CIDR;
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
   self->src_port = DEFAULT_SRC_PORT;
