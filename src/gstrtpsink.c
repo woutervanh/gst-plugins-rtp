@@ -444,19 +444,18 @@ gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
 static GstPad*
 gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
 {
-  GstElement *rtpbin;
   GstPad *pad;
   GstPad *ghost;
   GstCaps *caps = NULL;
   gchar *uri = NULL;
 
   GST_DEBUG_OBJECT (self, "Creating correct modules");
-  rtpbin = gst_element_factory_make ("rtpbin", NULL);
+  self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
   self->rtp_sink = gst_element_factory_make ("udpsink", NULL);
   self->rtcp_sink = gst_element_factory_make ("udpsink", NULL);
   self->rtcp_src = gst_element_factory_make ("udpsrc", NULL);
 
-  g_return_val_if_fail (rtpbin != NULL, FALSE);
+  g_return_val_if_fail (self->rtpbin != NULL, FALSE);
   g_return_val_if_fail (self->rtp_sink != NULL, FALSE);
   g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
   g_return_val_if_fail (self->rtcp_src != NULL, FALSE);
@@ -493,32 +492,33 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
       "caps", caps, "auto-multicast", TRUE, NULL);
   gst_caps_unref (caps);
 
-  if (g_object_class_find_property (G_OBJECT_GET_CLASS (rtpbin),
+  if (g_object_class_find_property (G_OBJECT_GET_CLASS (self->rtpbin),
           "use-pipeline-clock")) {
-    g_object_set (G_OBJECT (rtpbin), "use-pipeline-clock", TRUE, NULL);
+    g_object_set (G_OBJECT (self->rtpbin), "use-pipeline-clock", TRUE, NULL);
   } else {
     GST_WARNING_OBJECT (self,
         "rtpbin has no use-pipeline-clock, running old version?");
   }
 
   GST_DEBUG_OBJECT (self, "Connecting callbacks");
-  g_signal_connect (rtpbin, "pad-added",
+  g_signal_connect (self->rtpbin, "pad-added",
       G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
-  g_signal_connect (rtpbin, "element-added",
+  g_signal_connect (self->rtpbin, "element-added",
       G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
 
-  gst_bin_add_many (GST_BIN (self), rtpbin,
+  gst_bin_add_many (GST_BIN (self), self->rtpbin,
       self->rtp_sink, self->rtcp_sink, self->rtcp_src, NULL);
 
-  GST_DEBUG_OBJECT (rtpbin, "Connecting pads");
-  pad = gst_element_get_request_pad (rtpbin, "send_rtp_sink_0");
-  gst_element_link_pads (rtpbin, "send_rtp_src_0", self->rtp_sink, "sink");
-  gst_element_link_pads (rtpbin, "send_rtcp_src_0", self->rtcp_sink, "sink");
-  gst_element_link_pads (self->rtcp_src, "src", rtpbin, "recv_rtcp_sink_0");
+  GST_DEBUG_OBJECT (self->rtpbin, "Connecting pads");
+  pad = gst_element_get_request_pad (self->rtpbin, "send_rtp_sink_0");
+  gst_element_link_pads (self->rtpbin, "send_rtp_src_0", self->rtp_sink, "sink");
+  gst_element_link_pads (self->rtpbin, "send_rtcp_src_0", self->rtcp_sink, "sink");
+  gst_element_link_pads (self->rtcp_src, "src", self->rtpbin, "recv_rtcp_sink_0");
+
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
 
-  gst_element_sync_state_with_parent (GST_ELEMENT (rtpbin));
+  gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
   gst_element_sync_state_with_parent (self->rtp_sink);
 
   /** The order of these lines is really important **/

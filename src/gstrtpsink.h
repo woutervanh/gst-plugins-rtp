@@ -36,6 +36,8 @@ struct _GstRtpSink
   gint pt;
   gint src_port;
 
+  GstElement *rtpbin;
+
   GstElement *rtp_sink;
   GstElement *rtcp_sink;
   GstElement *rtcp_src;
