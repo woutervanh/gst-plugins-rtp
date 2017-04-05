@@ -1,3 +1,10 @@
+gst-plugins-barcortp (1.10.4~barco9+6) stretch-barco-testing; urgency=medium
+
+  * rtpsink: add cidr field
+  * rtpsink: check if ipv4
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 05 Apr 2017 15:26:26 +0200
+
 gst-plugins-barcortp (1.10.4~barco9+5) stretch-barco-testing; urgency=medium
 
   * rtpsink: correct default property for uri
