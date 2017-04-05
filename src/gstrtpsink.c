@@ -513,19 +513,21 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
     guint u[4];
     guint v=0;
 
-    if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
+    if (gst_barco_is_ipv4(luri)){
+      if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
 
-      GST_DEBUG_OBJECT(self, "Scanned %d.%d.%d.%d", u[0], u[1], u[2], u[3]);
-      v = (u[0]<<24) | (u[1]<<16) | (u[2]<<8) | u[3];
-      v++;
+        GST_DEBUG_OBJECT(self, "Scanned %d.%d.%d.%d", u[0], u[1], u[2], u[3]);
+        v = (u[0]<<24) | (u[1]<<16) | (u[2]<<8) | u[3];
+        v++;
 
-      nhost = g_strdup_printf("%d.%d.%d.%d",
-          (v>>24), (v>>16)&0xff, (v>>8)&0xff, (v&0xff));
+        nhost = g_strdup_printf("%d.%d.%d.%d",
+            (v>>24), (v>>16)&0xff, (v>>8)&0xff, (v&0xff));
 
-      GST_INFO_OBJECT(self, "Updating host location from %s to %s.", host, nhost);
-      GST_FIXME_OBJECT(self, "Implement CIDR checking.");
-      gst_uri_set_host(luri, nhost);
-      g_free(nhost);
+        GST_INFO_OBJECT(self, "Updating host location from %s to %s.", host, nhost);
+        GST_FIXME_OBJECT(self, "Implement CIDR checking.");
+        gst_uri_set_host(luri, nhost);
+        g_free(nhost);
+      }
     }
 
     /* Set properties */
