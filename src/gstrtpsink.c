@@ -16,27 +16,23 @@ GST_DEBUG_CATEGORY_STATIC (rtp_sink_debug);
 enum
 {
   PROP_0,
-  PROP_URI,
   PROP_CIDR,
+  PROP_NPADS,
+  PROP_SRC_PORT,
   PROP_TTL,
   PROP_TTL_MC,
-  PROP_SRC_PORT,
-  PROP_ENCRYPT,
-  PROP_NPADS,
+  PROP_URI,
   PROP_LAST
 };
 
-#define DEFAULT_PROP_URI    		      "rtp://0.0.0.0:5004"
-#define DEFAULT_PROP_MUXER  		      NULL
+#define DEFAULT_PROP_URI              "rtp://0.0.0.0:5004"
+#define DEFAULT_PROP_MUXER            NULL
 #define DEFAULT_PROP_CIDR             (32)
 #define DEFAULT_PROP_TTL              (64)
 #define DEFAULT_PROP_TTL_MC           (8)
 #define DEFAULT_SRC_PORT              (0)
-#define LOCAL_ADDRESS_IPV4			      "0.0.0.0" /* "127.0.0.1" */
-#define LOCAL_ADDRESS_IPV6			      "::"      /* "::1" */
-#define DEFAULT_PROP_ENCRYPT          (FALSE)
 
-static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink%d",
+static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink_%u",
     GST_PAD_SINK,
     GST_PAD_REQUEST,
     GST_STATIC_CAPS ("application/x-rtp"));
@@ -165,7 +161,7 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
    * Since: 1.10.0
    */
   g_object_class_install_property (oclass, PROP_CIDR,
-      g_param_spec_uint ("cidr", "CIDR Network Mask",
+      g_param_spec_uint ("cidr", "CIDR Network Mask to generate new IPs with",
           "CIDR Network Mask",
           0, 32, DEFAULT_PROP_CIDR,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
@@ -188,97 +184,6 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
   GST_DEBUG_CATEGORY_INIT (rtp_sink_debug,
       "barcortpsink", 0, "Barco rtp send bin");
 
-}
-
-static gboolean
-gst_rtp_sink_create_and_bind_rtp_socket (GstRtpSink * self)
-{
-  GError *err = NULL;
-  GInetAddress *bind_addr;
-  GSocketAddress *bind_saddr;
-
-  if (0 == self->src_port) {
-    GST_INFO_OBJECT (self, "src-port is set to 0 => Don't bind");
-    return FALSE;
-  }
-
-  GST_DEBUG_OBJECT (self, "Create rtp_sink socket");
-
-  /* create sender sockets try IPV6, fall back to IPV4 */
-  if ((self->rtp_sink_socket =
-          g_socket_new (G_SOCKET_FAMILY_IPV6,
-              G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &err)) == NULL) {
-    if ((self->rtp_sink_socket = g_socket_new (G_SOCKET_FAMILY_IPV4,
-                G_SOCKET_TYPE_DATAGRAM, G_SOCKET_PROTOCOL_UDP, &err)) == NULL)
-      goto no_socket;
-  }
-
-  /* Allow broadcast on sockets */
-  g_socket_set_broadcast (self->rtp_sink_socket, TRUE);
-
-  GST_DEBUG_OBJECT (self, "Bind rtp_sink socket on port %d",
-      self->src_port);
-
-  /*  */
-  if (G_SOCKET_FAMILY_IPV6 == g_socket_get_family (self->rtp_sink_socket))
-    bind_addr = g_inet_address_new_from_string (LOCAL_ADDRESS_IPV6);
-  else
-    bind_addr = g_inet_address_new_from_string (LOCAL_ADDRESS_IPV4);
-
-  bind_saddr = g_inet_socket_address_new (bind_addr, self->src_port);
-
-  if (!g_socket_bind (self->rtp_sink_socket, bind_saddr, TRUE, &err))
-    goto no_bind;
-
-  GST_DEBUG_OBJECT (self->rtp_sink,
-      "RTP UDP sink has sock %p which binds on port %d",
-      self->rtp_sink_socket, self->src_port);
-
-  return TRUE;
-
-  /* ERRORS */
-no_socket:
-  {
-    GST_ELEMENT_ERROR ((GstElement *) self, RESOURCE, FAILED, (NULL),
-        ("Could not create sockets: %s", err->message));
-    g_clear_error (&err);
-    return FALSE;
-  }
-no_bind:
-  {
-    GST_ELEMENT_WARNING (self, RESOURCE, SETTINGS, (NULL),
-        ("Could not bind socket: %s (%d)", err->message, err->code));
-    g_clear_error (&err);
-    g_object_unref (self->rtp_sink_socket);
-    return FALSE;
-  }
-}
-
-static void
-gst_rtp_sink_retrieve_rtcp_src_socket (GstRtpSink * self)
-{
-  if (NULL == self->rtcp_src_socket) {
-    g_object_get (G_OBJECT (self->rtcp_src), "used-socket",
-        &(self->rtcp_src_socket), NULL);
-    if (!G_IS_SOCKET (self->rtcp_src_socket))
-      GST_WARNING_OBJECT (self, "No valid socket retrieved from udpsrc");
-    else
-      GST_DEBUG_OBJECT (self->rtcp_sink, "RTCP UDP src has sock %p",
-          self->rtcp_src_socket);
-  }
-}
-
-static void
-close_and_unref_socket (GSocket * socket)
-{
-  GError *err = NULL;
-
-  if (socket != NULL && !g_socket_close (socket, &err)) {
-    GST_ERROR ("Failed to close socket %p: %s", socket, err->message);
-    g_clear_error (&err);
-  }
-  if (socket)
-    g_object_unref (socket);
 }
 
 static void
@@ -307,8 +212,6 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
       break;
     case PROP_SRC_PORT:
       self->src_port = g_value_get_int (value);
-      close_and_unref_socket (self->rtp_sink_socket);
-      gst_rtp_sink_create_and_bind_rtp_socket (self);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -355,47 +258,64 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
     GstPad * pad, gpointer data)
 {
   GstRtpSink *self = GST_RTP_SINK (data);
-  GstElement *elt;
   GstPad *target;
   GstCaps *caps;
-  gchar *name;
 
+  GST_FIXME_OBJECT(self, "Processing new pad %" GST_PTR_FORMAT, pad);
+  caps = gst_pad_query_caps (pad, NULL);
   if (GST_PAD_DIRECTION (pad) == GST_PAD_SINK) {
-    GST_DEBUG_OBJECT (self, "not interested in sink pads");
-    caps = gst_pad_query_caps (pad, NULL);
-    GST_DEBUG_OBJECT (self, "caps are %" GST_PTR_FORMAT, caps);
+    GST_DEBUG_OBJECT (self, "Not interested in SINK pad with caps %" GST_PTR_FORMAT, caps);
     gst_caps_unref (caps);
     return;
   }
 
-  caps = gst_pad_query_caps (pad, NULL);
   if (caps) {
     GstCaps *rtcp_caps = gst_caps_new_empty_simple ("application/x-rtcp");
 
     if (gst_caps_can_intersect (caps, rtcp_caps)) {
-      GST_DEBUG_OBJECT (self, "not interested in pad with rtcp caps");
+      GST_DEBUG_OBJECT (self, "Not interested in pad with RTCP caps %" GST_PTR_FORMAT, caps);
       gst_caps_unref (rtcp_caps);
       gst_caps_unref (caps);
       return;
     }
     gst_caps_unref (rtcp_caps);
-    gst_caps_unref (caps);
   }
 
-  elt = self->rtp_sink;
+  /* Go over the src pads of this element and get the reference to the
+   * udp sink was stored there */
+  {
+    GstIterator *iter = gst_element_iterate_sink_pads (GST_ELEMENT(self));
+    GstPad *ipad = NULL;
+    GValue data = { 0, };
 
-  target = gst_element_get_static_pad (elt, "sink");
-  if (gst_pad_is_linked (target)) {
+    while ((gst_iterator_next (iter, &data)) == GST_ITERATOR_OK) {
+      ipad = g_value_get_object (&data);
+      g_value_unset (&data);
+      if (ipad){
+        GstElement *sink;
+
+        GST_INFO_OBJECT (self, "Found a sink pad that can be used: %" GST_PTR_FORMAT, ipad);
+        sink = g_object_get_data (G_OBJECT (ipad), "rtpsink.rtp_sink");
+        GST_DEBUG_OBJECT(self, "Retrieved reference %" GST_PTR_FORMAT, sink);
+        target = gst_element_get_compatible_pad(sink, pad, NULL);
+        if (target){
+          GST_INFO_OBJECT(self, "Found a valid candidate to link against %" GST_PTR_FORMAT, target);
+          break;
+        }
+      }
+    }
+
+    /* clean up list */
+    gst_iterator_free (iter);
+  }
+
+  if (target == NULL){
     GST_WARNING_OBJECT (self,
-        "new pad on rtpbin, but there was already a src pad");
+        "new pad on rtpbin, but there was already a src pad %" GST_PTR_FORMAT, pad);
     gst_caps_unref (caps);
-    gst_object_unref (target);
     return;
   }
 
-  name = gst_element_get_name (elt);
-  GST_DEBUG_OBJECT (self, "linking new rtpbin src pad to %s sink pad", name);
-  g_free (name);
   gst_pad_link (pad, target);
   gst_object_unref (target);
   gst_caps_unref (caps);
@@ -460,6 +380,177 @@ gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
   gst_rtp_sink_find_property ("rtcp-min-interval", (guint64) 500000000);
 }
 
+/* In order for RTP to work by passing the data through the same bin;
+ * a number of udpsrc/udpsinks need to be created per media that is sent
+ * out. While media can be fed through the same rtpbin in order to keep them
+ * in the same session; each media sent should be sent on a different socket
+ * (See RFC 3550).
+ */
+static GstPad*
+gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
+{
+  GstElement *rtp_sink, *rtcp_sink, *rtcp_src;
+  GstCaps *caps;
+  GstUri *uri = gst_uri_copy(self->uri);
+  guint v=0;
+  GstPad *pad;
+
+  g_return_val_if_fail(self->uri, NULL);
+  g_return_val_if_fail(uri, NULL);
+
+  /* Adjust the URI to match with the CIDR notation */
+  if (gst_barco_is_ipv4(uri)){
+    guint u[4];
+    const gchar* host = gst_uri_get_host(uri);
+    if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
+      gchar *nhost;
+
+      GST_DEBUG_OBJECT(self, "Scanned %d.%d.%d.%d", u[0], u[1], u[2], u[3]);
+      v = (u[0]<<24) | (u[1]<<16) | (u[2]<<8) | u[3];
+      v += self->npads;
+
+      nhost = g_strdup_printf("%d.%d.%d.%d",
+          (v>>24), (v>>16)&0xff, (v>>8)&0xff, (v&0xff));
+
+      GST_INFO_OBJECT(self, "Updating host location from %s to %s.", host, nhost);
+      GST_FIXME_OBJECT(self, "Implement CIDR checking.");
+      gst_uri_set_host(uri, nhost);
+      g_free(nhost);
+    }
+  }
+
+  GST_DEBUG_OBJECT (self, "Creating UDP modules.");
+  rtp_sink = gst_element_factory_make ("udpsink", NULL);
+  rtcp_sink = gst_element_factory_make ("udpsink", NULL);
+  rtcp_src = gst_element_factory_make ("udpsrc", NULL);
+
+  g_return_val_if_fail (rtp_sink != NULL, NULL);
+  g_return_val_if_fail (rtcp_sink != NULL, NULL);
+  g_return_val_if_fail (rtcp_src != NULL, NULL);
+
+  /* Set properties */
+  GST_DEBUG_OBJECT(self, "Configuring the RTP/RTCP sink elements.");
+  g_object_set (G_OBJECT (rtp_sink),
+      "async", FALSE,
+      "ttl", self->ttl,
+      "ttl-mc", self->ttl_mc,
+      "host", gst_uri_get_host(uri),
+      "port", gst_uri_get_port(uri),
+      "auto-multicast", TRUE, NULL);
+
+  /* auto-multicast should be set to false as rtcp_src will already
+   * join the multicast group */
+  g_object_set (G_OBJECT (rtcp_sink),
+      "sync", FALSE,
+      "async", FALSE,
+      "ttl", self->ttl,
+      "ttl-mc", self->ttl_mc,
+      "host", gst_uri_get_host(uri),
+      "port", gst_uri_get_port(uri) + 1,
+      "close-socket", FALSE, "auto-multicast", FALSE, NULL);
+
+  GST_DEBUG_OBJECT(self, "Configuring the RTCP source element.");
+  if (gst_rtp_sink_is_multicast (gst_uri_get_host(uri))) {
+    g_object_set (G_OBJECT (rtcp_src),
+        "address", gst_uri_get_host(uri),
+        "port", gst_uri_get_port(uri) + 1,
+        NULL);
+  } else {
+    g_object_set (G_OBJECT (rtcp_src),
+        "port", gst_uri_get_port(uri) + 1,
+        NULL);
+  }
+
+  GST_DEBUG_OBJECT(self, "Set RTCP caps.");
+  caps = gst_caps_from_string ("application/x-rtcp");
+  g_object_set (G_OBJECT (rtcp_src),
+      "caps", caps, "auto-multicast", TRUE, NULL);
+  gst_caps_unref (caps);
+
+  gst_bin_add_many (GST_BIN (self), rtp_sink, rtcp_sink, rtcp_src, NULL);
+
+  gst_uri_unref(uri);
+
+  {
+    /* Link the UDP sources and sinks to the RTP bin element. This should
+       be done for each stream that is added while only using one single
+       rtpbin element. */
+    gchar *name;
+    GST_DEBUG_OBJECT (self, "Connecting pads");
+
+    /* Get the RTP (data) pad on the rtpbin to reuse later on, this pad
+     * will be ghosted to the urisend bin to allow feeding in data. */
+    name = g_strdup_printf ("recv_rtp_sink_%d", self->npads);
+    pad = gst_element_get_request_pad (self->rtpbin, name);
+    g_free(name);
+
+    /* Link up RTP bin data pad to the udpsink to send on.
+     *
+     * It looks as if that this link can only be used when a pad is
+     * spawned; the link up will be a bit later as a result. */
+    name = g_strdup_printf ("send_rtp_src_%d", self->npads);
+    if (!gst_element_link_pads (self->rtpbin, name, rtp_sink, "sink"))
+      GST_ERROR_OBJECT(self, "Problem linking up outgoing RTP data (%s).", name);
+    g_free(name);
+
+    /* Link up the RTCP control data pad to the udpsink to send on. */
+    name = g_strdup_printf ("send_rtcp_src_%d", self->npads);
+    if (!gst_element_link_pads (self->rtpbin, name, rtcp_sink, "sink"))
+      GST_ERROR_OBJECT(self, "Problem linking up outgoing RTCP data (%s).", name);
+    g_free(name);
+
+    /* Link up the udpsrc incoming RTCP data to the RTCP control sink bin */
+    name = g_strdup_printf ("recv_rtcp_sink_%d", self->npads);
+    if (!gst_element_link_pads (rtcp_src, "src", self->rtpbin, name))
+      GST_ERROR_OBJECT(self, "Problem linking up incoming RTCP data (%s).", name);
+    g_free(name);
+  }
+
+  gst_pad_set_event_function (pad,
+      (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
+
+  if(!gst_element_sync_state_with_parent (rtp_sink))
+    GST_ERROR_OBJECT (self, "Could not set RTP sink to playing.");
+
+  /* First we update the state of rtcp_src so that it creates a socket and
+   * binds on the port gst_uri_get_port(self->uri) + 1 */
+  if (!gst_element_sync_state_with_parent (rtcp_src))
+    GST_ERROR_OBJECT (self, "Could not set RTCP source to playing");
+
+  /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
+  {
+    GSocket *rtcp_src_socket;
+
+    g_object_get (G_OBJECT (rtcp_src), "used-socket",
+        &(rtcp_src_socket), NULL);
+    g_object_set (G_OBJECT (rtcp_sink),
+        "socket", rtcp_src_socket,
+        NULL);
+  }
+  /* And we sync the state of rtcp_sink */
+  if (!gst_element_sync_state_with_parent (rtcp_sink))
+    GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
+
+  {
+    GstPad *ghost;
+
+    ghost = gst_ghost_pad_new (name, pad);
+    gst_object_unref(pad);
+    gst_pad_set_active(ghost, TRUE);
+    gst_element_add_pad(GST_ELEMENT (self), ghost);
+
+    /* Store last references. There are needed further on to link up the
+     * new pads. */
+    GST_DEBUG_OBJECT(self, "Storing reference to %" GST_PTR_FORMAT, rtp_sink);
+
+    g_object_set_data (G_OBJECT (ghost), "rtpsink.rtp_sink", rtp_sink);
+
+    return ghost;
+  }
+  /* Bad */
+  return NULL;
+}
+
 /* The purpose of this code is to spawn the part of the pipeline that
  * will handle RTP. It is added in an rtp request pad since, later on,
  * multiple streams should be added into the same RTP session */
@@ -467,9 +558,6 @@ static GstPad*
 gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
 {
   GstPad *pad;
-  GstPad *ghost;
-  GstCaps *caps = NULL;
-  gchar *uri = NULL;
 
   if (self->rtpbin == NULL){
     GST_INFO_OBJECT(self, "Initialising rtpbin element.");
@@ -496,125 +584,9 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
     gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
   }
 
-  GST_DEBUG_OBJECT (self, "Creating correct modules");
-  self->rtp_sink = gst_element_factory_make ("udpsink", NULL);
-  self->rtcp_sink = gst_element_factory_make ("udpsink", NULL);
-  self->rtcp_src = gst_element_factory_make ("udpsrc", NULL);
-
-  g_return_val_if_fail (self->rtp_sink != NULL, FALSE);
-  g_return_val_if_fail (self->rtcp_sink != NULL, FALSE);
-  g_return_val_if_fail (self->rtcp_src != NULL, FALSE);
-
-  /* Adjust the URI to match with the CIDR notation */
-  {
-    GstUri *luri = gst_uri_copy(self->uri);
-    const gchar* host = gst_uri_get_host(luri);
-    gchar *nhost;
-    guint u[4];
-    guint v=0;
-
-    if (gst_barco_is_ipv4(luri)){
-      if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
-
-        GST_DEBUG_OBJECT(self, "Scanned %d.%d.%d.%d", u[0], u[1], u[2], u[3]);
-        v = (u[0]<<24) | (u[1]<<16) | (u[2]<<8) | u[3];
-        v++;
-
-        nhost = g_strdup_printf("%d.%d.%d.%d",
-            (v>>24), (v>>16)&0xff, (v>>8)&0xff, (v&0xff));
-
-        GST_INFO_OBJECT(self, "Updating host location from %s to %s.", host, nhost);
-        GST_FIXME_OBJECT(self, "Implement CIDR checking.");
-        gst_uri_set_host(luri, nhost);
-        g_free(nhost);
-      }
-    }
-
-    /* Set properties */
-    g_object_set (G_OBJECT (self->rtp_sink),
-        "async", FALSE,
-        "ttl", self->ttl,
-        "ttl-mc", self->ttl_mc,
-        "host", gst_uri_get_host(luri), "port", gst_uri_get_port(luri),
-        "socket", self->rtp_sink_socket, "auto-multicast", TRUE, NULL);
-
-    /* auto-multicast should be set to false as rtcp_src will already
-     * join the multicast group */
-    g_object_set (G_OBJECT (self->rtcp_sink),
-        "sync", FALSE,
-        "async", FALSE,
-        "ttl", self->ttl,
-        "ttl-mc", self->ttl_mc,
-        "host", gst_uri_get_host(luri), "port", gst_uri_get_port(luri) + 1,
-        "close-socket", FALSE, "auto-multicast", FALSE, NULL);
-
-    if (gst_rtp_sink_is_multicast (gst_uri_get_host(luri))) {
-      uri = g_strdup_printf ("udp://%s:%u",
-          gst_uri_get_host(luri), gst_uri_get_port(luri) + 1);
-      g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
-      g_free (uri);
-    } else
-      g_object_set (G_OBJECT (self->rtcp_src), "port", gst_uri_get_port(luri) + 1,
-          NULL);
-
-    gst_uri_unref(luri);
-  }
-
-  caps = gst_caps_from_string ("application/x-rtcp");
-  g_object_set (G_OBJECT (self->rtcp_src),
-      "caps", caps, "auto-multicast", TRUE, NULL);
-  gst_caps_unref (caps);
-
-  gst_bin_add_many (GST_BIN (self), self->rtp_sink, self->rtcp_sink, self->rtcp_src, NULL);
-
-  {
-    /* Link the udp sources and sinks to the rtp bin element. This should
-       be done for each stream that is added while only using one single
-       rtpbin element. */
-    gchar *name;
-    GST_DEBUG_OBJECT (self, "Connecting pads");
-
-    name = g_strdup_printf ("send_rtp_sink_%d", self->npads);
-    pad = gst_element_get_request_pad (self->rtpbin, name);
-    g_free(name);
-
-    name = g_strdup_printf ("send_rtp_src_%d", self->npads);
-    gst_element_link_pads (self->rtpbin, name, self->rtp_sink, "sink");
-    g_free(name);
-
-    name = g_strdup_printf ("send_rtcp_src_%d", self->npads);
-    gst_element_link_pads (self->rtpbin, name, self->rtcp_sink, "sink");
-    g_free(name);
-
-    name = g_strdup_printf ("send_rtcp_sink_%d", self->npads);
-    gst_element_link_pads (self->rtcp_src, "src", self->rtpbin, name);
-    g_free(name);
-  }
-
-  gst_pad_set_event_function (pad,
-      (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
-
-  gst_element_sync_state_with_parent (self->rtp_sink);
-
-  /** The order of these lines is really important **/
-  /* First we update the state of rtcp_src so that it creates a socket and
-   * binds on the port gst_uri_get_port(self->uri) + 1 */
-  if (!gst_element_sync_state_with_parent (self->rtcp_src))
-    GST_ERROR_OBJECT (self, "Could not set RTCP source to playing");
-  /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
-  gst_rtp_sink_retrieve_rtcp_src_socket (self);
-  g_object_set (G_OBJECT (self->rtcp_sink), "socket",
-      self->rtcp_src_socket, NULL);
-  /* And we sync the state of rtcp_sink */
-  if (!gst_element_sync_state_with_parent (self->rtcp_sink))
-    GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
-
-  ghost = gst_ghost_pad_new (name, pad);
-  gst_object_unref(pad);
-  gst_pad_set_active(ghost, TRUE);
-  gst_element_add_pad(GST_ELEMENT (self), ghost);
-
-  return ghost;
+  /* A URI was generated; start creating the UDP src/sink elements
+   * with this URI. */
+  return gst_rtp_sink_create_udp(self, name);
 }
 
 static void
@@ -638,8 +610,6 @@ gst_rtp_sink_init (GstRtpSink * self)
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
   self->src_port = DEFAULT_SRC_PORT;
-  self->rtp_sink_socket = NULL;
-  self->rtcp_src_socket = NULL;
 
   GST_OBJECT_FLAG_SET (GST_OBJECT (self), GST_ELEMENT_FLAG_SINK);
   GST_DEBUG_OBJECT (self, "rtpsink initialised");

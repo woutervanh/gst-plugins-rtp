@@ -28,8 +28,6 @@ struct _GstRtpSink
   gint npads;
   gchar *last_uri;
 
-  GSocket *rtp_sink_socket;
-	GSocket *rtcp_src_socket;
 
   guint cidr;
   gint ttl;
@@ -38,10 +36,6 @@ struct _GstRtpSink
   gint src_port;
 
   GstElement *rtpbin;
-
-  GstElement *rtp_sink;
-  GstElement *rtcp_sink;
-  GstElement *rtcp_src;
 };
 
 GType
