@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.10.4~barco9+7) stretch-barco-testing; urgency=medium
+
+  * rtpsink: clean up multiple stream through one rtpbin
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 11 Apr 2017 17:46:48 +0200
+
 gst-plugins-barcortp (1.10.4~barco9+6) stretch-barco-testing; urgency=medium
 
   * rtpsink: add cidr field
