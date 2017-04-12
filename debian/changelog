@@ -2,7 +2,7 @@ gst-plugins-barcortp (1.10.4~barco9+8) stretch-barco-testing; urgency=medium
 
   * rtpsink: show the sink caps
 
- -- Marc Leeman <marc.leeman@barco.com>  Wed, 12 Apr 2017 16:52:03 +0200
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 12 Apr 2017 17:07:38 +0200
 
 gst-plugins-barcortp (1.10.4~barco9+7) stretch-barco-testing; urgency=medium
 
