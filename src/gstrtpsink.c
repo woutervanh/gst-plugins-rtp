@@ -263,6 +263,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
 
   GST_FIXME_OBJECT(self, "Processing new pad %" GST_PTR_FORMAT, pad);
   caps = gst_pad_query_caps (pad, NULL);
+  GST_INFO_OBJECT(self, "Pad has caps %" GST_PTR_FORMAT, caps);
   if (GST_PAD_DIRECTION (pad) == GST_PAD_SINK) {
     GST_DEBUG_OBJECT (self, "Not interested in SINK pad with caps %" GST_PTR_FORMAT, caps);
     gst_caps_unref (caps);
