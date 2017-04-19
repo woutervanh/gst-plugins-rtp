@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.10.4~barco9+9) stretch-barco-testing; urgency=medium
+
+  * rtpsrc: set default URI
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 19 Apr 2017 11:26:33 +0200
+
 gst-plugins-barcortp (1.10.4~barco9+8) stretch-barco-testing; urgency=medium
 
   * rtpsink: show the sink caps
