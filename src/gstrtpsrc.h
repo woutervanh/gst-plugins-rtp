@@ -24,7 +24,7 @@ struct _GstRtpSrc
 {
   GstBin parent_instance;
 
-  GstUri *uri, *rtcp_remote_uri;
+  GstUri *uri;
   gchar *last_uri;
   gchar *encoding_name;
   guint pt_select;

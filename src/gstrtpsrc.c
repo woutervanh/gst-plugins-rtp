@@ -34,7 +34,8 @@ enum
   PROP_LAST
 };
 
-#define DEFAULT_PROP_URI              (NULL)
+#define DEFAULT_PROP_URI              "rtp://0.0.0.0:5004"
+#define DEFAULT_PROP_ENCODING_NAME    (NULL)
 #define DEFAULT_PROP_MUXER            (NULL)
 #define DEFAULT_LATENCY_MS            (200)
 #define DEFAULT_BUFFER_SIZE           (0)
@@ -112,7 +113,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
    */
   g_object_class_install_property (oclass, PROP_ENCODING_NAME,
       g_param_spec_string ("encoding-name", "Encoding name",
-          "force encoding-name on depayloader", DEFAULT_PROP_URI,
+          "force encoding-name on depayloader", DEFAULT_PROP_ENCODING_NAME,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
@@ -1065,9 +1066,8 @@ gst_rtp_src_finalize (GObject * gobject)
 static void
 gst_rtp_src_init (GstRtpSrc * self)
 {
-  self->uri = NULL;
-  self->rtcp_remote_uri = NULL;
-  self->encoding_name = NULL;
+  self->uri = gst_uri_from_string (DEFAULT_PROP_URI);
+  self->encoding_name = DEFAULT_PROP_ENCODING_NAME;
   self->ghostpad = NULL;
   self->n_ptdemux_pads = 0;
   self->n_rtpbin_pads = 0;
