@@ -97,6 +97,7 @@ const static RtpParameters RTP_DYNAMIC_PARAMETERS[] = {
   {0, "LPC", "audio", 0},
   {0, "PCMA", "audio", 0},
   {0, "PCMU", "audio", 0},
+  {0, "OPUS", "audio", 48000},
   {0, "BMPEG", "video", 90000},
   {0, "BT656", "video", 90000},
   {0, "DV", "video", 90000},
