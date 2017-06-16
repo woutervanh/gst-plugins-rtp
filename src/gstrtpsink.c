@@ -19,7 +19,6 @@ enum
   PROP_TTL,
   PROP_TTL_MC,
   PROP_SRC_PORT,
-  PROP_KEY_DERIV_RATE,
   PROP_LAST
 };
 
@@ -286,9 +285,6 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
       break;
     case PROP_SRC_PORT:
       g_value_set_int (value, self->src_port);
-      break;
-    case PROP_KEY_DERIV_RATE:
-      g_value_set_uint (value, self->key_derivation_rate);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
