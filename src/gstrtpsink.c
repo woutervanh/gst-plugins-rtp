@@ -83,6 +83,7 @@ gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
   g_return_if_fail (GST_IS_GHOST_PAD (pad));
   g_return_if_fail (GST_IS_RTP_SINK (element));
 
+  GST_FIXME_OBJECT (self, "Clean up RTP resources if not used.");
   /* FIXME: clean up the pipeline that was generated as a result of
    * requesting a pad */
   self->npads--;
@@ -168,6 +169,13 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           0, 32, DEFAULT_PROP_CIDR,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
+  /**
+   * GstRtpSink: n-pads
+   *
+   * The number of active pads (requested).
+   *
+   * Since: 1.10.0
+   */
   g_object_class_install_property (oclass, PROP_NPADS,
       g_param_spec_uint ("n-pads", "Number of sink pads",
           "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
