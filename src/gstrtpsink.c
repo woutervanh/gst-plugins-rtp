@@ -492,8 +492,8 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     GST_DEBUG_OBJECT (self, "Connecting pads");
 
     /* Get the RTP (data) pad on the rtpbin to reuse later on, this pad
-     * will be ghosted to the urisend bin to allow feeding in data. */
-    name = g_strdup_printf ("recv_rtp_sink_%d", self->npads);
+     * will be ghosted to the rtpsink bin to allow feeding in data. */
+    name = g_strdup_printf ("send_rtp_sink_%d", self->npads);
     pad = gst_element_get_request_pad (self->rtpbin, name);
     g_free(name);
 
