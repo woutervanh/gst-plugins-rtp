@@ -67,7 +67,7 @@ gst_rtp_sink_request_new_pad (GstElement * element,
   ghost = gst_rtp_sink_create_rtpbin_chain (self, name);
 
   /* Increment the number of pads that is being used. */
-  GST_DEBUG_INFO(self, "Exposing pad %" GST_PTR_FORMAT, ghost);
+  GST_DEBUG_OBJECT(self, "Exposing pad %" GST_PTR_FORMAT, ghost);
 
   self->npads++;
   return ghost;
