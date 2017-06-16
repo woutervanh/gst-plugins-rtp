@@ -1,3 +1,21 @@
+gst-plugins-barcortp (1.8.3.4+galleon2) galleon; urgency=medium
+
+  * rtspsrc: check module creation
+  * rtpsrc: remove dependencies on encrypt/decrypt
+  * sdpsink: remove encrypt
+  * debian: add proprietary copyright
+  * all: use g_value_take_string when taking ownership
+  * rtpsink: correct default property for uri
+  * debian: add linitan override for bad distribution
+  * rtpsrc: set default URI
+  * add OPUS as audio
+  * rtpsink: remove remnants of ENCRYPT
+  * rtpsink: remove remnants of key_derivation_rate
+  * rtpsink: we do not yet have npads
+  * rtpsink: no PROP_NPADS
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 16 Jun 2017 15:00:32 +0200
+
 gst-plugins-barcortp (1.8.3.4+galleon1) galleon; urgency=medium
 
   * rebuild
