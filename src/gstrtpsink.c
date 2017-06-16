@@ -540,7 +540,6 @@ gst_rtp_sink_finalize (GObject * gobject)
 static void
 gst_rtp_sink_init (GstRtpSink * self)
 {
-  self->npads = 0;
   self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
