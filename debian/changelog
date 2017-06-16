@@ -2,7 +2,7 @@ gst-plugins-barcortp (1.8.3.4+galleon1) galleon; urgency=medium
 
   * rebuild
 
- -- Marc Leeman <marc.leeman@barco.com>  Fri, 16 Jun 2017 14:29:47 +0200
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 16 Jun 2017 14:30:35 +0200
 
 gst-plugins-barcortp (1.8.3.4) vclub; urgency=medium
 
