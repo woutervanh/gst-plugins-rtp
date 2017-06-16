@@ -544,16 +544,19 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
 
   {
     GstPad *ghost;
+    GstPadTemplate *pad_tmpl;
 
-    ghost = gst_ghost_pad_new (name, pad);
+    pad_tmpl = gst_static_pad_template_get (&sink_template);
+    ghost = gst_ghost_pad_new_from_template (name, pad, pad_tmpl);
+    gst_object_unref (pad_tmpl);
     gst_object_unref(pad);
+
     gst_pad_set_active(ghost, TRUE);
     gst_element_add_pad(GST_ELEMENT (self), ghost);
 
     /* Store last references. There are needed further on to link up the
      * new pads. */
     GST_DEBUG_OBJECT(self, "Storing reference to %" GST_PTR_FORMAT, rtp_sink);
-
     g_object_set_data (G_OBJECT (ghost), "rtpsink.rtp_sink", rtp_sink);
 
     return ghost;
