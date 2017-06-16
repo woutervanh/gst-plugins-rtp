@@ -441,6 +441,8 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   g_return_val_if_fail (rtcp_sink != NULL, NULL);
   g_return_val_if_fail (rtcp_src != NULL, NULL);
 
+  gst_bin_add_many (GST_BIN (self), rtp_sink, rtcp_sink, rtcp_src, NULL);
+
   /* Set properties */
   GST_DEBUG_OBJECT(self, "Configuring the RTP/RTCP sink elements.");
   g_object_set (G_OBJECT (rtp_sink),
@@ -479,8 +481,6 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   g_object_set (G_OBJECT (rtcp_src),
       "caps", caps, "auto-multicast", TRUE, NULL);
   gst_caps_unref (caps);
-
-  gst_bin_add_many (GST_BIN (self), rtp_sink, rtcp_sink, rtcp_src, NULL);
 
   gst_uri_unref(uri);
 
