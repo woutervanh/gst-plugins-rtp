@@ -19,7 +19,6 @@ enum
   PROP_TTL,
   PROP_TTL_MC,
   PROP_SRC_PORT,
-  PROP_ENCRYPT,
   PROP_KEY_DERIV_RATE,
   PROP_LAST
 };
@@ -31,7 +30,6 @@ enum
 #define DEFAULT_SRC_PORT              (0)
 #define LOCAL_ADDRESS_IPV4			      "0.0.0.0" /* "127.0.0.1" */
 #define LOCAL_ADDRESS_IPV6			      "::"      /* "::1" */
-#define DEFAULT_PROP_ENCRYPT          (FALSE)
 
 static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("sink",
     GST_PAD_SINK,
@@ -288,9 +286,6 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
       break;
     case PROP_SRC_PORT:
       g_value_set_int (value, self->src_port);
-      break;
-    case PROP_ENCRYPT:
-      g_value_set_boolean (value, self->encrypt);
       break;
     case PROP_KEY_DERIV_RATE:
       g_value_set_uint (value, self->key_derivation_rate);
