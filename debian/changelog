@@ -1,9 +1,6 @@
 gst-plugins-barcortp (1.8.3.4) vclub; urgency=medium
 
-  [ Margaritis, Konstantinos ]
   * process with wrap-and-sort
-
-  [ Marc Leeman ]
 
  -- Marc Leeman <marc.leeman@barco.com>  Wed, 09 Nov 2016 15:12:41 +0000
 
@@ -18,8 +15,6 @@ gst-plugins-barcortp (1.8.3.2) vclub; urgency=medium
 
   [ Margaritis, Konstantinos ]
   * Clean up package
-
-  [ Konstantinos Margaritis ]
 
  -- Konstantinos Margaritis <margaritis@gaiusbaltar>  Tue, 25 Oct 2016 14:38:06 +0200
 
