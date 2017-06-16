@@ -75,10 +75,9 @@ gst_rtp_sink_request_new_pad (GstElement * element,
 static void
 gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
 {
-  gchar *name = gst_pad_get_name (pad);
   GstRtpSink *self = GST_RTP_SINK (element);
 
-  GST_DEBUG_OBJECT (self, "Release pad with name %s", name);
+  GST_DEBUG_OBJECT (self, "Release pad with name %" GST_PTR_FORMAT, pad);
 
   g_return_if_fail (GST_IS_GHOST_PAD (pad));
   g_return_if_fail (GST_IS_RTP_SINK (element));
@@ -87,8 +86,6 @@ gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
   /* FIXME: clean up the pipeline that was generated as a result of
    * requesting a pad */
   self->npads--;
-
-  g_free (name);
 }
 
 static void
