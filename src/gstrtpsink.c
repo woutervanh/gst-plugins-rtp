@@ -112,10 +112,6 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
           0, 65535, DEFAULT_SRC_PORT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
-  g_object_class_install_property (oclass, PROP_NPADS,
-      g_param_spec_uint ("n-pads", "Number of sink pads",
-          "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
-
   gst_element_class_add_pad_template (gstelement_class,
       gst_static_pad_template_get (&src_template));
 
