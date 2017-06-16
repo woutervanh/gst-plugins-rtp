@@ -1,3 +1,14 @@
+gst-plugins-barcortp (1.12.0~barco9+5) stretch-barco-testing; urgency=medium
+
+  * rtpsink: add comments about n-pads
+  * rtpsink: create pad from template
+  * rtpsink: use GST_PTR_FORMAT iso name
+  * rtpsink: improve default logging
+  * rtpsink: add to bin before setting properties
+  * rtpsink: for RTP sending, hooking up recv_rtp_sink_%d iso send_rtp_sink_%d is WRONG
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 16 Jun 2017 16:32:27 +0200
+
 gst-plugins-barcortp (1.12.0~barco9+4) stretch-barco-testing; urgency=medium
 
   * rtpsink: correct logging: -/
