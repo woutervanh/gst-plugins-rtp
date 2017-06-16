@@ -5,7 +5,7 @@ Maintainer: Marc Leeman <marc.leeman@barco.com>
 Uploaders: Marc leeman <marc.leeman@gmail.com>,
            Konstantinos Margaritis <konstantinos.margaritis@barco.com>
 Build-Depends: cmake,
-               debhelper (>= 10),
+               debhelper (>= 9),
                docbook-to-man,
                gstreamer1.0-tools,
                indent,
