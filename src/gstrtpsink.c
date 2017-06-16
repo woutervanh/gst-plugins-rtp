@@ -269,6 +269,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   GstCaps *caps;
 
   GST_FIXME_OBJECT(self, "Processing new pad %" GST_PTR_FORMAT, pad);
+
   caps = gst_pad_query_caps (pad, NULL);
   GST_INFO_OBJECT(self, "Pad has caps %" GST_PTR_FORMAT, caps);
   if (GST_PAD_DIRECTION (pad) == GST_PAD_SINK) {
@@ -335,6 +336,8 @@ gst_rtp_sink_set_sdes (GstElement * rtpbin, const gchar * prop,
 {
   GstStructure *s;
 
+  GST_DEBUG("Setting \"%s\" to \"%s\",", prop, val);
+
   g_object_get (G_OBJECT (rtpbin), "sdes", &s, NULL);
   gst_structure_set (s, prop, G_TYPE_STRING, val, NULL);
   g_object_set (G_OBJECT (rtpbin), "sdes", s, NULL);
@@ -382,6 +385,8 @@ static void
 gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
     GstElement * new_element, gpointer data)
 {
+  GST_DEBUG_OBJECT(self, "New element added %" GST_PTR_FORMAT, new_element);
+
   g_return_if_fail (new_element != NULL);
 
   /* set minimal interval on 0.5s */
@@ -403,8 +408,9 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   guint v=0;
   GstPad *pad;
 
+  GST_DEBUG_OBJECT(self, "Hooking up UDP elements.");
+
   g_return_val_if_fail(self->uri, NULL);
-  g_return_val_if_fail(uri, NULL);
 
   /* Adjust the URI to match with the CIDR notation */
   if (gst_barco_is_ipv4(uri)){
@@ -427,7 +433,6 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     }
   }
 
-  GST_DEBUG_OBJECT (self, "Creating UDP modules.");
   rtp_sink = gst_element_factory_make ("udpsink", NULL);
   rtcp_sink = gst_element_factory_make ("udpsink", NULL);
   rtcp_src = gst_element_factory_make ("udpsrc", NULL);
@@ -569,6 +574,8 @@ static GstPad*
 gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
 {
   GstPad *pad;
+
+  GST_DEBUG_OBJECT(self, "Initialising rtpbin.");
 
   if (self->rtpbin == NULL){
     GST_INFO_OBJECT(self, "Initialising rtpbin element.");
