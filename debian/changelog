@@ -1,8 +1,14 @@
+gst-plugins-barcortp (1.8.3.4+galleon1) galleon; urgency=medium
+
+  * rebuild
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 16 Jun 2017 14:29:47 +0200
+
 gst-plugins-barcortp (1.8.3.4) vclub; urgency=medium
 
   * process with wrap-and-sort
 
- -- Marc Leeman <marc.leeman@barco.com>  Wed, 09 Nov 2016 15:12:41 +0000
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 16 Jun 2017 14:29:30 +0200
 
 gst-plugins-barcortp (1.8.3.3) vclub; urgency=medium
 
