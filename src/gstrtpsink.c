@@ -79,6 +79,7 @@ gst_rtp_sink_request_new_pad (GstElement * element,
   self->npads++;
   return ghost;
 }
+
 static void
 gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
 {
@@ -105,9 +106,7 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
   oclass->get_property = gst_rtp_sink_get_property;
   oclass->finalize = gst_rtp_sink_finalize;
 
-  gstelement_class->request_new_pad =
-      GST_DEBUG_FUNCPTR (gst_rtp_sink_request_new_pad);
-
+  gstelement_class->request_new_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_request_new_pad);
   gstelement_class->release_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_release_pad);
 
   /**
