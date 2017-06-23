@@ -336,6 +336,35 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   gst_caps_unref (caps);
 }
 
+/* When a stream is sent on a socket, send out the information on the
+ * relevant pad to let upper bins know what the combination of
+ * Pad/Socket/Caps is */
+static void
+gst_rtp_sink_send_uri_info(GstRtpSink *self, const GstPad * pad, const gchar* uri)
+{
+  GstStructure *s1, *s2;
+
+  g_return_if_fail(self != NULL);
+  g_return_if_fail(pad != NULL);
+  g_return_if_fail(uri != NULL);
+
+  GST_DEBUG_OBJECT(self, "Sending signal uri %s on %" GST_PTR_FORMAT, uri, pad);
+
+  /*The message will take ownership of the structure */
+  s1 = gst_structure_new ("GstRtpSinkUriInfo",
+      "uri", G_TYPE_STRING, uri,
+      NULL);
+
+  s2 = gst_structure_copy (s1);
+  /* post element message with codec */
+  gst_element_post_message (GST_ELEMENT (self),
+      gst_message_new_element (GST_OBJECT_CAST (self), s1)
+      );
+
+  gst_pad_push_event(pad,
+      gst_event_new_custom (GST_EVENT_CUSTOM_UPSTREAM, s2));
+}
+
 static void
 gst_rtp_sink_set_sdes (GstElement * rtpbin, const gchar * prop,
     const gchar * val)
@@ -488,8 +517,6 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "caps", caps, "auto-multicast", TRUE, NULL);
   gst_caps_unref (caps);
 
-  gst_uri_unref(uri);
-
   {
     /* Link the UDP sources and sinks to the RTP bin element. This should
        be done for each stream that is added while only using one single
@@ -512,6 +539,12 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       GST_ERROR_OBJECT(self, "Problem linking up outgoing RTP data (%s).", name);
     g_free(name);
 
+    {
+      gchar* suri = gst_uri_to_string(uri);
+      gst_rtp_sink_send_uri_info(self, pad, suri);
+      g_free(suri);
+    }
+
     /* Link up the RTCP control data pad to the udpsink to send on. */
     name = g_strdup_printf ("send_rtcp_src_%d", self->npads);
     if (!gst_element_link_pads (self->rtpbin, name, rtcp_sink, "sink"))
@@ -524,6 +557,8 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       GST_ERROR_OBJECT(self, "Problem linking up incoming RTCP data (%s).", name);
     g_free(name);
   }
+
+  gst_uri_unref(uri);
 
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
