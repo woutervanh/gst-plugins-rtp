@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.0~barco9+7) stretch-barco-testing; urgency=medium
+
+  * rtpsink: set the GstUri as data on the request pad
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 23 Jun 2017 16:27:04 +0200
+
 gst-plugins-barcortp (1.12.0~barco9+6) stretch-barco-testing; urgency=medium
 
   * rtpsink: update copyright
