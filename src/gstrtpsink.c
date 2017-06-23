@@ -1,4 +1,11 @@
 /* ex: set tabstop=2 shiftwidth=2 expandtab: */
+/*
+ * GStreamer
+ * Copyright (C) 2009-2017 BARCO
+ *
+ * Author: Marc Leeman <marc.leeman@barco.com>
+ *
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
