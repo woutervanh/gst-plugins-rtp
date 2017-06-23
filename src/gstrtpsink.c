@@ -558,8 +558,6 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     g_free(name);
   }
 
-  gst_uri_unref(uri);
-
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
 
@@ -601,6 +599,9 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
      * new pads. */
     GST_DEBUG_OBJECT(self, "Storing reference to %" GST_PTR_FORMAT, rtp_sink);
     g_object_set_data (G_OBJECT (ghost), "rtpsink.rtp_sink", rtp_sink);
+    g_object_set_data (G_OBJECT (ghost), "rtpsink.rtp_uri", uri);
+
+    /*gst_uri_unref(uri);*/
 
     return ghost;
   }
