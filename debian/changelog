@@ -1,3 +1,15 @@
+gst-plugins-barcortp (1.12.1~barco9+1) stretch-barco-testing; urgency=medium
+
+  * rtp: add X-GST as params
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 04 Jul 2017 16:33:47 +0200
+
+gst-plugins-barcortp (1.12.1~barco9+0) stretch-barco-testing; urgency=medium
+
+  * Bump version to 1.12.1
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 04 Jul 2017 16:32:04 +0200
+
 gst-plugins-barcortp (1.12.0~barco9+7) stretch-barco-testing; urgency=medium
 
   * rtpsink: set the GstUri as data on the request pad
