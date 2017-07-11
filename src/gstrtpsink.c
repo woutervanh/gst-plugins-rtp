@@ -59,7 +59,7 @@ static void gst_rtp_sink_get_property (GObject * object, guint prop_id,
 static void gst_rtp_sink_finalize (GObject * gobject);
 static gboolean gst_rtp_sink_is_multicast (const gchar * ip_addr);
 static GstPad*
-gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name);
+gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name);
 
 static GstPad *
 gst_rtp_sink_request_new_pad (GstElement * element,
@@ -71,7 +71,7 @@ gst_rtp_sink_request_new_pad (GstElement * element,
   GST_DEBUG_OBJECT (self, "Request new pad with caps: %" GST_PTR_FORMAT, caps);
   g_return_val_if_fail (self->uri != NULL, NULL);
 
-  ghost = gst_rtp_sink_create_rtpbin_chain (self, name);
+  ghost = gst_rtp_sink_create_udp(self, name);
 
   /* Increment the number of pads that is being used. */
   GST_DEBUG_OBJECT(self, "Exposing pad %" GST_PTR_FORMAT, ghost);
@@ -609,17 +609,29 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   return NULL;
 }
 
-/* The purpose of this code is to spawn the part of the pipeline that
- * will handle RTP. It is added in an rtp request pad since, later on,
- * multiple streams should be added into the same RTP session */
-static GstPad*
-gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
+static void
+gst_rtp_sink_finalize (GObject * gobject)
 {
-  GstPad *pad;
+  GstRtpSink *self = GST_RTP_SINK (gobject);
 
-  GST_DEBUG_OBJECT(self, "Initialising rtpbin.");
+  if (self->uri)
+    gst_uri_unref (self->uri);
 
-  if (self->rtpbin == NULL){
+  G_OBJECT_CLASS (parent_class)->finalize (gobject);
+}
+
+static void
+gst_rtp_sink_init (GstRtpSink * self)
+{
+  self->npads = 0;
+  self->rtpbin = NULL;
+  self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
+  self->cidr = DEFAULT_PROP_CIDR;
+  self->ttl = DEFAULT_PROP_TTL;
+  self->ttl_mc = DEFAULT_PROP_TTL_MC;
+  self->src_port = DEFAULT_SRC_PORT;
+
+  {
     GST_INFO_OBJECT(self, "Initialising rtpbin element.");
 
     self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
@@ -643,33 +655,6 @@ gst_rtp_sink_create_rtpbin_chain (GstRtpSink * self, const gchar *name)
 
     gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
   }
-
-  /* A URI was generated; start creating the UDP src/sink elements
-   * with this URI. */
-  return gst_rtp_sink_create_udp(self, name);
-}
-
-static void
-gst_rtp_sink_finalize (GObject * gobject)
-{
-  GstRtpSink *self = GST_RTP_SINK (gobject);
-
-  if (self->uri)
-    gst_uri_unref (self->uri);
-
-  G_OBJECT_CLASS (parent_class)->finalize (gobject);
-}
-
-static void
-gst_rtp_sink_init (GstRtpSink * self)
-{
-  self->npads = 0;
-  self->rtpbin = NULL;
-  self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
-  self->cidr = DEFAULT_PROP_CIDR;
-  self->ttl = DEFAULT_PROP_TTL;
-  self->ttl_mc = DEFAULT_PROP_TTL_MC;
-  self->src_port = DEFAULT_SRC_PORT;
 
   GST_OBJECT_FLAG_SET (GST_OBJECT (self), GST_ELEMENT_FLAG_SINK);
   GST_DEBUG_OBJECT (self, "rtpsink initialised");
