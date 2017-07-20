@@ -36,6 +36,8 @@ struct _GstRtpSink
   gint src_port;
 
   GstElement *rtpbin;
+
+  GMutex lock;
 };
 
 GType

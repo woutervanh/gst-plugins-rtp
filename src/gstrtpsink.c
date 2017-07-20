@@ -52,6 +52,10 @@ G_DEFINE_TYPE_WITH_CODE (GstRtpSink, gst_rtp_sink, GST_TYPE_BIN,
     G_IMPLEMENT_INTERFACE (GST_TYPE_URI_HANDLER,
         gst_rtp_sink_uri_handler_init));
 
+#define GST_RTP_SINK_GET_LOCK(obj) (&((GstRtpSink*)(obj))->lock)
+#define GST_RTP_SINK_LOCK(obj) (g_mutex_lock (GST_RTP_SINK_GET_LOCK(obj)))
+#define GST_RTP_SINK_UNLOCK(obj) (g_mutex_unlock (GST_RTP_SINK_GET_LOCK(obj)))
+
 static void gst_rtp_sink_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_rtp_sink_get_property (GObject * object, guint prop_id,
@@ -71,29 +75,61 @@ gst_rtp_sink_request_new_pad (GstElement * element,
   GST_DEBUG_OBJECT (self, "Request new pad with caps: %" GST_PTR_FORMAT, caps);
   g_return_val_if_fail (self->uri != NULL, NULL);
 
+  GST_RTP_SINK_LOCK(self);
   ghost = gst_rtp_sink_create_udp(self, name);
 
   /* Increment the number of pads that is being used. */
   GST_DEBUG_OBJECT(self, "Exposing pad %" GST_PTR_FORMAT, ghost);
 
   self->npads++;
+  GST_RTP_SINK_UNLOCK(self);
+
   return ghost;
+}
+
+static void
+gst_rtp_sink_cleanup_send_chain(GstElement *self, GstPad* sinkpad)
+{
+  GstElement *parent = NULL;
+
+  g_return_if_fail(sinkpad != NULL);
+
+  parent = gst_pad_get_parent(sinkpad);
+  GST_DEBUG_OBJECT(self, "Cleaning up element %" GST_PTR_FORMAT, parent);
+
+  gst_element_release_request_pad (parent, sinkpad);
+
+  gst_object_unref(parent);
 }
 
 static void
 gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
 {
   GstRtpSink *self = GST_RTP_SINK (element);
+  GstPad* target = NULL;
 
   GST_DEBUG_OBJECT (self, "Release pad with name %" GST_PTR_FORMAT, pad);
 
   g_return_if_fail (GST_IS_GHOST_PAD (pad));
   g_return_if_fail (GST_IS_RTP_SINK (element));
 
+  GST_RTP_SINK_LOCK(self);
   GST_FIXME_OBJECT (self, "Clean up RTP resources if not used.");
-  /* FIXME: clean up the pipeline that was generated as a result of
-   * requesting a pad */
+  /* This is a ghost pad, first print some information before following
+   * the chain downstream to clean up. */
+  target = gst_ghost_pad_get_target(GST_GHOST_PAD(pad));
+  GST_DEBUG_OBJECT(self, "Processing target pad %" GST_PTR_FORMAT, target);
+
+  GST_DEBUG_OBJECT(self, "Pad %" GST_PTR_FORMAT " is not linked, clean up.", target);
+  gst_rtp_sink_cleanup_send_chain(GST_ELEMENT(self), target);
+
+  if (target) gst_object_unref(target);
+
+  gst_pad_set_active (pad, FALSE);
+  gst_element_remove_pad (GST_ELEMENT (self), pad);
+
   self->npads--;
+  GST_RTP_SINK_UNLOCK(self);
 }
 
 static void
@@ -274,7 +310,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   GstPad *target;
   GstCaps *caps;
 
-  GST_FIXME_OBJECT(self, "Processing new pad %" GST_PTR_FORMAT, pad);
+  GST_FIXME_OBJECT(self, "Pad %" GST_PTR_FORMAT " was added on %" GST_PTR_FORMAT, pad, element);
 
   caps = gst_pad_query_caps (pad, NULL);
   GST_INFO_OBJECT(self, "Pad has caps %" GST_PTR_FORMAT, caps);
@@ -334,6 +370,53 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   gst_pad_link (pad, target);
   gst_object_unref (target);
   gst_caps_unref (caps);
+}
+
+static void
+gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
+    GstPad * pad, gpointer data)
+{
+  GstRtpSink *self = GST_RTP_SINK (data);
+  GstElement *sink = NULL;
+  GstPad *peer = NULL;
+  GstElement *parent = NULL;
+
+  GST_INFO_OBJECT(self, "Pad %" GST_PTR_FORMAT " was removed on %" GST_PTR_FORMAT, pad, element);
+
+  peer = gst_pad_get_peer(pad);
+  if (peer) gst_pad_get_parent(peer);
+
+  GST_FIXME_OBJECT(self, "Pad %" GST_PTR_FORMAT ", linked to %" GST_PTR_FORMAT " was removed on %" GST_PTR_FORMAT, pad, peer, parent);
+
+  sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtp_sink");
+  if (GST_IS_ELEMENT(sink)){
+    gst_element_set_state (sink, GST_STATE_READY);
+    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_element_set_state (sink, GST_STATE_NULL);
+
+    GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
+  }
+
+  sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtcp_sink");
+  if (GST_IS_ELEMENT(sink)){
+    gst_element_set_state (sink, GST_STATE_READY);
+    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_element_set_state (sink, GST_STATE_NULL);
+
+    GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
+  }
+
+  sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtcp_src");
+  if (GST_IS_ELEMENT(sink)){
+    gst_element_set_state (sink, GST_STATE_READY);
+    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_element_set_state (sink, GST_STATE_NULL);
+
+    GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
+  }
+
+  if (peer) gst_object_unref(peer);
+  if (parent) gst_object_unref(parent);
 }
 
 /* When a stream is sent on a socket, send out the information on the
@@ -530,6 +613,9 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     pad = gst_element_get_request_pad (self->rtpbin, name);
     g_free(name);
 
+    /* This is very bad, there is a mixup with the pads */
+    g_return_val_if_fail ( pad != NULL, NULL);
+
     /* Link up RTP bin data pad to the udpsink to send on.
      *
      * It looks as if that this link can only be used when a pad is
@@ -583,6 +669,9 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   if (!gst_element_sync_state_with_parent (rtcp_sink))
     GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
 
+  g_object_set_data (G_OBJECT (pad), "rtpsink.rtp_sink", rtp_sink);
+  g_object_set_data (G_OBJECT (pad), "rtpsink.rtcp_sink", rtcp_sink);
+  g_object_set_data (G_OBJECT (pad), "rtpsink.rtcp_src", rtcp_src);
   {
     GstPad *ghost;
     GstPadTemplate *pad_tmpl;
@@ -617,6 +706,7 @@ gst_rtp_sink_finalize (GObject * gobject)
   if (self->uri)
     gst_uri_unref (self->uri);
 
+  g_mutex_clear (&self->lock);
   G_OBJECT_CLASS (parent_class)->finalize (gobject);
 }
 
@@ -630,12 +720,13 @@ gst_rtp_sink_init (GstRtpSink * self)
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
   self->src_port = DEFAULT_SRC_PORT;
+  g_mutex_init (&self->lock);
 
   {
     GST_INFO_OBJECT(self, "Initialising rtpbin element.");
 
     self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
-    g_return_val_if_fail (self->rtpbin != NULL, FALSE);
+    g_return_if_fail (self->rtpbin != NULL);
 
     if (g_object_class_find_property (G_OBJECT_GET_CLASS (self->rtpbin),
           "use-pipeline-clock")) {
@@ -648,6 +739,8 @@ gst_rtp_sink_init (GstRtpSink * self)
     GST_DEBUG_OBJECT (self, "Connecting callbacks");
     g_signal_connect (self->rtpbin, "pad-added",
         G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
+    g_signal_connect (self->rtpbin, "pad-removed",
+        G_CALLBACK (gst_rtp_sink_rtpbin_pad_removed_cb), self);
     g_signal_connect (self->rtpbin, "element-added",
         G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
 
