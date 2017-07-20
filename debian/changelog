@@ -1,3 +1,15 @@
+gst-plugins-barcortp (1.12.2~barco9+2) stretch-barco-testing; urgency=medium
+
+  * rtpsink: resource cleanup after relasing pad
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 20 Jul 2017 17:21:59 +0200
+
+gst-plugins-barcortp (1.12.2~barco9+1) stretch-barco-testing; urgency=medium
+
+  * rtpsink: resource cleanup after relasing pad
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 20 Jul 2017 17:21:16 +0200
+
 gst-plugins-barcortp (1.12.1~barco9+2) stretch-barco-testing; urgency=medium
 
   * rtpsink: clean up sink rtpbin generation
