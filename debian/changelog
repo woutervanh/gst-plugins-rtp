@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.2~barco9+3) stretch-barco-testing; urgency=medium
+
+  * rtpsink: clean up element removal
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 20 Jul 2017 18:53:04 +0200
+
 gst-plugins-barcortp (1.12.2~barco9+2) stretch-barco-testing; urgency=medium
 
   * rtpsink: resource cleanup after relasing pad
