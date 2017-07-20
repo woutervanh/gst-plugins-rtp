@@ -390,27 +390,27 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
 
   sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtp_sink");
   if (GST_IS_ELEMENT(sink)){
-    gst_element_set_state (sink, GST_STATE_READY);
-    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_element_set_locked_state (sink, TRUE);
     gst_element_set_state (sink, GST_STATE_NULL);
+    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
 
     GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
   }
 
   sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtcp_sink");
   if (GST_IS_ELEMENT(sink)){
-    gst_element_set_state (sink, GST_STATE_READY);
-    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_element_set_locked_state (sink, TRUE);
     gst_element_set_state (sink, GST_STATE_NULL);
+    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
 
     GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
   }
 
   sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtcp_src");
   if (GST_IS_ELEMENT(sink)){
-    gst_element_set_state (sink, GST_STATE_READY);
-    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_element_set_locked_state (sink, TRUE);
     gst_element_set_state (sink, GST_STATE_NULL);
+    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
 
     GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
   }
