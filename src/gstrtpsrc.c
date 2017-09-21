@@ -799,11 +799,13 @@ gst_rtp_src_start (GstRtpSrc * self)
   gchar *uri = NULL;
   GstElement *lastelt;
   GstStateChangeReturn ret;
+  GstElement *queue;
 
   /* Create elements */
   GST_DEBUG_OBJECT (self, "Creating elements");
 
   self->rtp_src = gst_element_factory_make ("udpsrc", NULL);
+  queue = gst_element_factory_make ("queue", NULL);
   g_return_val_if_fail (self->rtp_src != NULL, FALSE);
 
   self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
@@ -891,7 +893,11 @@ gst_rtp_src_start (GstRtpSrc * self)
 
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (self), self->rtp_src, self->rtpbin, NULL);
-  lastelt = self->rtp_src;
+  gst_bin_add_many (GST_BIN (self), queue, NULL);
+  gst_element_link_many(self->rtp_src, queue);
+  /*lastelt = self->rtp_src;*/
+  lastelt = queue;
+
   if (self->rtpheaderchange) {
     GST_DEBUG_OBJECT (self, "Adding PT change");
     gst_bin_add (GST_BIN (self), self->rtpheaderchange);
@@ -916,6 +922,8 @@ gst_rtp_src_start (GstRtpSrc * self)
     gst_element_link_pads (self->rtpbin, "send_rtcp_src_0",
         self->rtcp_sink, "sink");
   }
+
+  gst_element_sync_state_with_parent(queue);
 
   /* Sync elements states to the parent bin */
   ret = gst_element_set_state (self->rtp_src, GST_STATE_READY);
