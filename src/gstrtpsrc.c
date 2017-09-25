@@ -74,7 +74,7 @@ static void gst_rtp_src_set_property (GObject * object, guint prop_id,
 static void gst_rtp_src_get_property (GObject * object, guint prop_id,
     GValue * value, GParamSpec * pspec);
 static void gst_rtp_src_finalize (GObject * gobject);
-static GstCaps *gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id,
+static GstCaps *gst_rtp_src_request_pt_map_cb (GstElement * sess, guint sess_id,
     guint pt, GstRtpSrc * self);
 static GstStateChangeReturn
 gst_rtp_src_change_state (GstElement * element, GstStateChange transition);
@@ -357,7 +357,7 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
           self->encoding_name);
       if (self->rtp_src) {
         GST_INFO_OBJECT (self, "Requesting PT map");
-        caps = gst_rtp_src_request_pt_map (NULL, 0, 96, self);
+        caps = gst_rtp_src_request_pt_map_cb (NULL, 0, 96, self);
         g_object_set (G_OBJECT (self->rtp_src), "caps", caps, NULL);
         gst_caps_unref (caps);
       }
@@ -598,7 +598,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   }
 
   if (G_UNLIKELY (self->pt_change)) {
-    GstCaps *caps = gst_rtp_src_request_pt_map (NULL, 0, 96, self);
+    GstCaps *caps = gst_rtp_src_request_pt_map_cb (NULL, 0, 96, self);
     GstElement *filter = gst_element_factory_make ("capsfilter", NULL);
     GstPad *sinkpad;
 
@@ -706,7 +706,7 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
 }
 
 static GstCaps *
-gst_rtp_src_request_pt_map (GstElement * sess, guint sess_id, guint pt,
+gst_rtp_src_request_pt_map_cb (GstElement * sess, guint sess_id, guint pt,
     GstRtpSrc * self)
 {
   const RtpParameters *p;
@@ -907,7 +907,7 @@ gst_rtp_src_start (GstRtpSrc * self)
   gst_element_link_pads (lastelt, "src", self->rtpbin, "recv_rtp_sink_0");
 
   g_signal_connect (self->rtpbin, "request-pt-map",
-      G_CALLBACK (gst_rtp_src_request_pt_map), self);
+      G_CALLBACK (gst_rtp_src_request_pt_map_cb), self);
 
   g_signal_connect (self->rtpbin, "pad-added",
       G_CALLBACK (gst_rtp_src_rtpbin_pad_added_cb), self);
