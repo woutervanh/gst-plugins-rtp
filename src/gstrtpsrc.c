@@ -793,6 +793,29 @@ full_caps_set:
   return ret;
 }
 
+static void
+gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
+    guint arg0,
+    guint arg1,
+    gpointer user_data)
+{
+  GstRtpSrc *self = GST_RTP_SRC(user_data);
+
+  GST_INFO_OBJECT(self, "Dectected a new SSRC %x <-> %x.", arg0, arg1);
+}
+
+static void
+gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
+    guint arg0,
+    guint arg1,
+    gpointer user_data)
+{
+  GstRtpSrc *self = GST_RTP_SRC(user_data);
+
+  GST_WARNING_OBJECT(self, "Dectected an SSRC collision %x <-> %x.", arg0, arg1);
+}
+
+
 static gboolean
 gst_rtp_src_start (GstRtpSrc * self)
 {
@@ -911,6 +934,13 @@ gst_rtp_src_start (GstRtpSrc * self)
 
   g_signal_connect (self->rtpbin, "pad-added",
       G_CALLBACK (gst_rtp_src_rtpbin_pad_added_cb), self);
+
+  g_signal_connect (self->rtpbin, "on-new-ssrc",
+      G_CALLBACK (gst_rtp_src_rtpbin_on_new_ssrc_cb), self);
+
+  g_signal_connect (self->rtpbin, "on-ssrc-collision",
+      G_CALLBACK (gst_rtp_src_rtpbin_on_ssrc_collision_cb), self);
+
 
   if (self->enable_rtcp) {
     GST_DEBUG_OBJECT (self, "Adding elements and linking up.");
