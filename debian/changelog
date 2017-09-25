@@ -1,3 +1,15 @@
+gst-plugins-barcortp (1.8.3.1+galleon2) galleon; urgency=medium
+
+  * rtpsrc: read UDP data in different thread
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 22 Sep 2017 15:44:06 +0200
+
+gst-plugins-barcortp (1.8.3.1+galleon1) galleon; urgency=medium
+
+  *     rtpsrc: read UDP data in different thread
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 22 Sep 2017 15:42:52 +0200
+
 gst-plugins-barcortp (1.8.3.1) vclub; urgency=medium
 
   * rtpsrc: rtcp-ttl-mc property added Route RTCP Receiver Reports beyond
