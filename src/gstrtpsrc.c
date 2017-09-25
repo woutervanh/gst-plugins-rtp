@@ -917,7 +917,7 @@ gst_rtp_src_start (GstRtpSrc * self)
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (self), self->rtp_src, self->rtpbin, NULL);
   gst_bin_add_many (GST_BIN (self), queue, NULL);
-  gst_element_link_many(self->rtp_src, queue);
+  gst_element_link_many(self->rtp_src, queue, NULL);
   /*lastelt = self->rtp_src;*/
   lastelt = queue;
 
