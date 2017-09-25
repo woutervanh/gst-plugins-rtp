@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.2~barco9+5) stretch-barco-testing; urgency=medium
+
+  * rtpsrc: add_many corrected
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 25 Sep 2017 14:29:22 +0200
+
 gst-plugins-barcortp (1.12.2~barco9+4) stretch-barco-testing; urgency=medium
 
   * rtpsrc: read UDP data in different thread
