@@ -850,7 +850,7 @@ gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
 {
   GstRtpSrc *self = GST_RTP_SRC(user_data);
 
-  GST_INFO_OBJECT(self, "Dectected a new SSRC %x <-> %x.", arg0, arg1);
+  GST_INFO_OBJECT(self, "Dectected a new SSRC: session 0x%x, ssrc 0x%x.", arg0, arg1);
 }
 
 static void
@@ -861,7 +861,7 @@ gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
 {
   GstRtpSrc *self = GST_RTP_SRC(user_data);
 
-  GST_WARNING_OBJECT(self, "Dectected an SSRC collision %x <-> %x.", arg0, arg1);
+  GST_WARNING_OBJECT(self, "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", arg0, arg1);
 }
 
 
