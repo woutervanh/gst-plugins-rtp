@@ -1,3 +1,10 @@
+gst-plugins-barcortp (1.8.3.1+galleon3) galleon; urgency=medium
+
+  * rtpsrc: add _cb to request_pt_map cb
+  * rtpsrc: info/warning SSRC activity
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 25 Sep 2017 09:22:02 +0200
+
 gst-plugins-barcortp (1.8.3.1+galleon2) galleon; urgency=medium
 
   * rtpsrc: read UDP data in different thread
