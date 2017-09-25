@@ -561,7 +561,7 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   caps = gst_pad_query_caps (pad, NULL);
 
   name = gst_pad_get_name (pad);
-  GST_DEBUG_OBJECT (self, "Adding a pad %s with caps %" GST_PTR_FORMAT, name,
+  GST_INFO_OBJECT (self, "Adding a pad %s with caps %" GST_PTR_FORMAT, name,
       caps);
   g_free (name);
 
