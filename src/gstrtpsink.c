@@ -39,6 +39,7 @@ enum
 #define DEFAULT_PROP_TTL_MC           (8)
 #define DEFAULT_SRC_PORT              (0)
 
+/*Investigate "application/x-rtp, rtcp-fb-ccm-fir=(boolean)true"*/
 static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink_%u",
     GST_PAD_SINK,
     GST_PAD_REQUEST,
@@ -310,7 +311,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   GstPad *target;
   GstCaps *caps;
 
-  GST_FIXME_OBJECT(self, "Pad %" GST_PTR_FORMAT " was added on %" GST_PTR_FORMAT, pad, element);
+  GST_INFO_OBJECT(self, "Pad %" GST_PTR_FORMAT " was added on %" GST_PTR_FORMAT, pad, element);
 
   caps = gst_pad_query_caps (pad, NULL);
   GST_INFO_OBJECT(self, "Pad has caps %" GST_PTR_FORMAT, caps);
@@ -386,7 +387,7 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
   peer = gst_pad_get_peer(pad);
   if (peer) gst_pad_get_parent(peer);
 
-  GST_FIXME_OBJECT(self, "Pad %" GST_PTR_FORMAT ", linked to %" GST_PTR_FORMAT " was removed on %" GST_PTR_FORMAT, pad, peer, parent);
+  GST_INFO_OBJECT(self, "Pad %" GST_PTR_FORMAT ", linked to %" GST_PTR_FORMAT " was removed on %" GST_PTR_FORMAT, pad, peer, parent);
 
   sink = g_object_get_data (G_OBJECT (pad), "rtpsink.rtp_sink");
   if (GST_IS_ELEMENT(sink)){
