@@ -535,6 +535,11 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   if (gst_barco_is_ipv4(uri)){
     guint u[4];
     const gchar* host = gst_uri_get_host(uri);
+    if( host == NULL){
+      GST_ERROR_OBJECT(self, "Could not get a valid host.");
+      return NULL;
+    }
+
     if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
       gchar *nhost;
 

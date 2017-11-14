@@ -26,6 +26,8 @@ gst_barco_is_ipv4 (GstUri* uri)
 {
   gboolean res = TRUE;
 
+  g_return_val_if_fail(uri != NULL, FALSE);
+
   if (uri && 0 != *(gst_uri_get_host(uri))) {
     GInetAddress *addr = g_inet_address_new_from_string (gst_uri_get_host(uri));
     if (g_inet_address_get_family (addr) == G_SOCKET_FAMILY_IPV4) {
