@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.2~barco9+7) stretch-barco-testing; urgency=medium
+
+  * rtpsink: input validation
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 14 Nov 2017 14:56:06 +0100
+
 gst-plugins-barcortp (1.12.2~barco9+6) stretch-barco-testing; urgency=medium
 
   * gstrtpsink: remove some FIXMEs
