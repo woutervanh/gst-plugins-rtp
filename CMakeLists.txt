@@ -21,6 +21,11 @@ find_package(PkgConfig REQUIRED)
 # set(CMAKE_C_FLAGS "-g -Wall")
 set(CMAKE_C_FLAGS " -std=gnu99 -D_FORTIFY_SOURCE=2 -DGST_USE_UNSTABLE_API -DG_THREADS_MANDATORY -DG_DISABLE_CAST_CHECKS -DG_DISABLE_ASSERT -Wall -Wdeclaration-after-statement -Wvla -Wpointer-arith -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wwrite-strings -Wold-style-definition -Waggregate-return -Winit-self -Wmissing-include-dirs -Waddress -Wno-multichar -Wnested-externs -g -DGST_DISABLE_DEPRECATED -O2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wno-error ")
 
+# Tests
+pkg_check_modules (GSTCHECK REQUIRED gstreamer-check-1.0)
+enable_testing ()
+add_subdirectory (tests)
+
 #Required packages for main functionality
 pkg_check_modules (GLIB REQUIRED glib-2.0)
 pkg_check_modules (GOBJECT REQUIRED gobject-2.0)
