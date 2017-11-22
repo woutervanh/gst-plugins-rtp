@@ -6,45 +6,11 @@
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
+
 #define GST_TYPE_RTP_SINK             (gst_rtp_sink_get_type ())
-#define GST_RTP_SINK(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), GST_TYPE_RTP_SINK, GstRtpSink))
-#define GST_RTP_SINK_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), GST_TYPE_RTP_SINK, GstRtpSinkClass))
-#define GST_IS_RTP_SINK(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GST_TYPE_RTP_SINK))
-#define GST_IS_RTP_SINK_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), GST_TYPE_RTP_SINK))
-#define GST_RTP_SINK_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), GST_TYPE_RTP_SINK, GstRtpSinkClass))
-typedef struct _GstRtpSinkClass GstRtpSinkClass;
-typedef struct _GstRtpSink GstRtpSink;
+G_DECLARE_FINAL_TYPE (GstRtpSink, gst_rtp_sink, GST, RTP_SINK, GstBin);
 
-struct _GstRtpSinkClass
-{
-  GstBinClass parent_class;
-};
-
-struct _GstRtpSink
-{
-  GstBin parent_instance;
-
-  GstUri *uri;
-  gint npads;
-  gchar *last_uri;
-
-
-  guint cidr;
-  gint ttl;
-  gint ttl_mc;
-  gint pt;
-  gint src_port;
-
-  GstElement *rtpbin;
-
-  GMutex lock;
-};
-
-GType
-gst_rtp_sink_get_type (void)
-    G_GNUC_CONST;
-
-     gboolean rtp_sink_init (GstPlugin * plugin);
+gboolean rtp_sink_init (GstPlugin * plugin);
 
 G_END_DECLS
 #endif /* _GST_RTP_SINK_H_ */
