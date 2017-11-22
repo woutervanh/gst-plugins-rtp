@@ -119,12 +119,14 @@ gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
   /* This is a ghost pad, first print some information before following
    * the chain downstream to clean up. */
   target = gst_ghost_pad_get_target(GST_GHOST_PAD(pad));
-  GST_DEBUG_OBJECT(self, "Processing target pad %" GST_PTR_FORMAT, target);
+  if (target != NULL) {
+    GST_DEBUG_OBJECT(self, "Processing target pad %" GST_PTR_FORMAT, target);
 
-  GST_DEBUG_OBJECT(self, "Pad %" GST_PTR_FORMAT " is not linked, clean up.", target);
-  gst_rtp_sink_cleanup_send_chain(GST_ELEMENT(self), target);
+    GST_DEBUG_OBJECT(self, "Pad %" GST_PTR_FORMAT " is not linked, clean up.", target);
+    gst_rtp_sink_cleanup_send_chain(GST_ELEMENT(self), target);
 
-  if (target) gst_object_unref(target);
+    gst_object_unref(target);
+  }
 
   gst_pad_set_active (pad, FALSE);
   gst_element_remove_pad (GST_ELEMENT (self), pad);
