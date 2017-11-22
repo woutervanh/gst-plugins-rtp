@@ -15,6 +15,37 @@
 GST_DEBUG_CATEGORY_STATIC (rtp_src_debug);
 #define GST_CAT_DEFAULT rtp_src_debug
 
+struct _GstRtpSrc
+{
+  GstBin parent_instance;
+
+  GstUri *uri;
+  gchar *last_uri;
+  gchar *encoding_name;
+  guint pt_select;
+  guint pt_change;
+  guint ssrc_select;
+  guint ssrc_change;
+  gchar *multicast_iface;
+  guint buffer_size;
+  guint latency;
+  guint64 timeout;
+
+  gboolean enable_rtcp;
+  guint16 rtcp_ttl_mc;
+
+  GstElement *rtp_src;
+  GstElement *rtcp_src;
+  GstElement *rtcp_sink;
+  GstElement *rtpbin;
+  GstElement *rtpheaderchange;
+  GstCaps *caps;
+
+  gint n_ptdemux_pads;
+  gint n_rtpbin_pads;
+  GstPad *ghostpad;
+};
+
 enum
 {
   PROP_0,
@@ -69,233 +100,12 @@ static void gst_rtp_src_uri_handler_init (gpointer g_iface,
 G_DEFINE_TYPE_WITH_CODE (GstRtpSrc, gst_rtp_src, GST_TYPE_BIN,
     G_IMPLEMENT_INTERFACE (GST_TYPE_URI_HANDLER, gst_rtp_src_uri_handler_init));
 
-static void gst_rtp_src_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec);
-static void gst_rtp_src_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec);
-static void gst_rtp_src_finalize (GObject * gobject);
 static GstCaps *gst_rtp_src_request_pt_map_cb (GstElement * sess, guint sess_id,
     guint pt, GstRtpSrc * self);
-static GstStateChangeReturn
-gst_rtp_src_change_state (GstElement * element, GstStateChange transition);
+static GstStateChangeReturn gst_rtp_src_change_state (GstElement * element,
+    GstStateChange transition);
 static gboolean gst_rtp_src_is_multicast (const gchar * ip_addr);
 static GSocket *gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self);
-
-static void
-gst_rtp_src_class_init (GstRtpSrcClass * klass)
-{
-  GObjectClass *oclass = G_OBJECT_CLASS (klass);
-  GstElementClass *gstelement_class = GST_ELEMENT_CLASS (klass);
-
-  oclass->set_property = gst_rtp_src_set_property;
-  oclass->get_property = gst_rtp_src_get_property;
-  oclass->finalize = gst_rtp_src_finalize;
-
-  /**
-   * GstRtpSrc::uri
-   *
-   * uri to establish a stream to. All GStreamer parameters can be
-   * encoded in the URI, this URI format is RFC compliant.
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_URI,
-      g_param_spec_string ("uri", "URI", "URI to save",
-          DEFAULT_PROP_URI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSrc::encoding-name
-   *
-   * Specify the encoding name of the stream, typically when no SDP is
-   * obtained. This steers auto plugging and avoids wrong detection.
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_ENCODING_NAME,
-      g_param_spec_string ("encoding-name", "Encoding name",
-          "force encoding-name on depayloader", DEFAULT_PROP_ENCODING_NAME,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSrc::latency
-   *
-   * Default latency is 50, for MPEG4 large GOP sizes, this needs to be
-   * increased
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_LATENCY,
-      g_param_spec_uint ("latency", "Buffer latency in ms",
-          "Default amount of ms to buffer in the jitterbuffers", 0, G_MAXUINT,
-          DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::enable-rtcp
-   *
-   * Enable RTCP (Real Time Control Protocol)
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_ENABLE_RTCP,
-      g_param_spec_boolean ("enable-rtcp", "Enable RTCP",
-          "Enable RTCP feedback in RTP", DEFAULT_ENABLE_RTCP,
-          G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::multicast-iface
-   *
-   * On machines with multiple interfaces, lock the socket to the
-   * interface instead of the routing.
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_MULTICAST_IFACE,
-      g_param_spec_string ("multicast-iface", "Multicast Interface",
-          "Multicast Interface to listen on", DEFAULT_PROP_MULTICAST_IFACE,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSrc::buffer-size
-   *
-   * Size of the kernel receive buffer in bytes
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_BUFFER_SIZE,
-      g_param_spec_uint ("buffer-size", "Kernel receive buffer size",
-          "Size of the kernel receive buffer in bytes, 0=default", 0, G_MAXUINT,
-          DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::timeout
-   *
-   * UDP timeout value
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_TIMEOUT,
-      g_param_spec_uint64 ("timeout", "Timeout",
-          "Post a message after timeout microseconds (0 = disabled)", 0,
-          G_MAXUINT64, DEFAULT_PROP_TIMEOUT,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSrc::pt-change
-   *
-   * Change the payload type value in the packet
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass,
-      PROP_PT_CHANGE,
-      g_param_spec_uint ("pt-change",
-          "Payload type to change to",
-          "Payload type with which to overwrite a previous value (0 = disabled)",
-          GST_RTPPTCHANGE_MIN_PT_NUMBER,
-          GST_RTPPTCHANGE_MAX_PT_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_PT_NUMBER, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::pt-select
-   *
-   * Select based on the payload type value in the packet
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass,
-      PROP_PT_SELECT,
-      g_param_spec_uint ("pt-select",
-          "Payload type to select",
-          "Payload type to select, others are dropped (0 = disabled)",
-          GST_RTPPTCHANGE_MIN_PT_NUMBER,
-          GST_RTPPTCHANGE_MAX_PT_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_PT_SELECT, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::ssrc-change
-   *
-   * Change the SSRC value in the packet
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass,
-      PROP_SSRC_CHANGE,
-      g_param_spec_uint ("ssrc-change",
-          "Payload type to change to",
-          "Payload type with which to overwrite a previous value (0 = disabled)",
-          GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
-          GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_SSRC_NUMBER, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::ssrc-select
-   *
-   * Select based on the SSRC value in the packet
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass,
-      PROP_SSRC_SELECT,
-      g_param_spec_uint ("ssrc-select",
-          "Payload type to select",
-          "Payload type to select, others are dropped (0 = disabled)",
-          GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
-          GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT, G_PARAM_READWRITE));
-
-  /**
-   * GstRtpSrc::caps
-   *
-   * The RTP caps of the stream coming in
-   *
-   * Since: 1.0.0
-   */
-  g_object_class_install_property (oclass, PROP_CAPS,
-      g_param_spec_boxed ("caps", "Caps",
-          "The caps of the incoming stream", GST_TYPE_CAPS,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSrc::rtcp-ttl-mc
-   *
-   * This parameter applies to incoming multicast traffic only.
-   *
-   * Video sources on occasion deliver RTCP along RTP payload, rtpsrc then would
-   * respond with Receiver Reports on the RTCP socket.
-   *
-   * While unicast delivery usually gets sufficent TTL that
-   * defaults to /proc/sys/net/ipv4/ip_default_ttl,
-   * multicast TTL has to be specified explicitly as it's
-   * system default value of 1 is immutable.
-   *
-   * Since: ??
-   */
-  g_object_class_install_property (oclass,
-      PROP_RTCP_TTL_MC,
-      g_param_spec_uint ("rtcp-ttl-mc",
-          "Time-to-live for multicast RTCP Receiver Reports",
-          "Time-to-live for multicast RTCP Receiver Reports",
-          DEFAULT_PROP_RTCP_TTL_MC,
-          64,
-          DEFAULT_PROP_RTCP_TTL_MC, G_PARAM_READWRITE));
-
-
-  gst_element_class_add_pad_template (gstelement_class,
-      gst_static_pad_template_get (&src_template));
-
-  gstelement_class->change_state = GST_DEBUG_FUNCPTR (gst_rtp_src_change_state);
-
-  gst_element_class_set_static_metadata (gstelement_class,
-      "rtpsrc",
-      "Generic/Bin/Src",
-      "Barco Rtp src",
-      "Thijs Vermeir <thijs.vermeir@barco.com>, "
-      "Marc Leeman <marc.leeman@barco.com>, "
-      "Paul Henrys <paul.henrys'daubigny@barco.com>");
-
-  GST_DEBUG_CATEGORY_INIT (rtp_src_debug,
-      "barcortpsrc", 0, "Barco rtp send bin");
-}
 
 static GSocket *
 gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
@@ -311,193 +121,6 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
     GST_DEBUG_OBJECT (self, "RTP UDP source has sock %p", rtcpfd);
 
   return rtcpfd;
-}
-
-static void
-gst_rtp_src_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec)
-{
-  GstRtpSrc *self = GST_RTP_SRC (object);
-  GstCaps *caps = NULL;
-
-  switch (prop_id) {
-    case PROP_URI:{
-      gchar *uri = NULL;
-      if (self->uri)
-        gst_uri_unref (self->uri);
-      self->uri = gst_uri_from_string (g_value_get_string (value));
-
-      gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
-      if (self->rtp_src) {
-        uri = g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri), gst_uri_get_port(self->uri));
-        g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
-        g_free (uri);
-      }
-      if (self->enable_rtcp && self->rtcp_src) {
-        if (gst_rtp_src_is_multicast (gst_uri_get_host(self->uri))) {
-          uri =
-              g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri),
-              gst_uri_get_port(self->uri) + 1);
-          g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
-          g_free (uri);
-        } else {
-          g_object_set (G_OBJECT (self->rtcp_src),
-              "port", gst_uri_get_port(self->uri) + 1, NULL);
-        }
-        g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
-      }
-    }
-      break;
-    case PROP_ENCODING_NAME:
-      if (self->encoding_name)
-        g_free (self->encoding_name);
-      self->encoding_name = g_value_dup_string (value);
-      GST_INFO_OBJECT (self,
-          "Force encoding name (%s), do you know what you are doing?",
-          self->encoding_name);
-      if (self->rtp_src) {
-        GST_INFO_OBJECT (self, "Requesting PT map");
-        caps = gst_rtp_src_request_pt_map_cb (NULL, 0, 96, self);
-        g_object_set (G_OBJECT (self->rtp_src), "caps", caps, NULL);
-        gst_caps_unref (caps);
-      }
-      break;
-    case PROP_LATENCY:
-      self->latency = g_value_get_uint (value);
-      if (self->rtpbin)
-        g_object_set (G_OBJECT (self->rtpbin), "latency", self->latency, NULL);
-      break;
-    case PROP_ENABLE_RTCP:
-      self->enable_rtcp = g_value_get_boolean (value);
-      GST_DEBUG_OBJECT (self, "set enable-rtcp: %d", self->enable_rtcp);
-      break;
-    case PROP_MULTICAST_IFACE:
-      if (self->multicast_iface)
-        g_free (self->multicast_iface);
-      self->multicast_iface = g_value_dup_string (value);
-      GST_DEBUG_OBJECT (self, "set multicast-iface: %s", self->multicast_iface);
-      xgst_barco_propagate_setting (self, "multicast-iface",
-          self->multicast_iface);
-      break;
-    case PROP_BUFFER_SIZE:
-      self->buffer_size = g_value_get_uint (value);
-      GST_DEBUG_OBJECT (self, "set buffer-size: %u", self->buffer_size);
-      xgst_barco_propagate_setting (self, "buffer-size", self->buffer_size);
-      break;
-    case PROP_TIMEOUT:
-      self->timeout = g_value_get_uint64 (value);
-      xgst_barco_propagate_setting (self, "timeout", self->timeout);
-      break;
-    case PROP_PT_CHANGE:
-      self->pt_change = g_value_get_uint (value);
-      if (self->rtpheaderchange)
-        g_object_set (G_OBJECT (self->rtpheaderchange), "pt-change",
-            self->pt_change, NULL);
-      GST_DEBUG_OBJECT (self, "set pt change: %u", self->pt_change);
-      break;
-    case PROP_PT_SELECT:
-      self->pt_select = g_value_get_uint (value);
-      if (self->rtpheaderchange)
-        g_object_set (G_OBJECT (self->rtpheaderchange), "pt-select",
-            self->pt_select, NULL);
-      GST_DEBUG_OBJECT (self, "set pt select: %u", self->pt_select);
-      break;
-    case PROP_SSRC_CHANGE:
-      self->ssrc_change = g_value_get_uint (value);
-      if (self->rtpheaderchange)
-        g_object_set (G_OBJECT (self->rtpheaderchange), "ssrc-change",
-            self->ssrc_change, NULL);
-      GST_DEBUG_OBJECT (self, "set ssrc change: %u", self->ssrc_change);
-      break;
-    case PROP_SSRC_SELECT:
-      self->ssrc_select = g_value_get_uint (value);
-      if (self->rtpheaderchange)
-        g_object_set (G_OBJECT (self->rtpheaderchange), "ssrc-select",
-            self->ssrc_select, NULL);
-      GST_DEBUG_OBJECT (self, "set ssrc select: %u", self->ssrc_select);
-      break;
-    case PROP_CAPS:
-    {
-      const GstCaps *new_caps_val = gst_value_get_caps (value);
-      GstCaps *new_caps;
-      GstCaps *old_caps;
-
-      if (new_caps_val == NULL) {
-        new_caps = gst_caps_new_any ();
-      } else {
-        GST_DEBUG_OBJECT (self, "Setting caps to %" GST_PTR_FORMAT,
-            new_caps_val);
-        new_caps = gst_caps_copy (new_caps_val);
-      }
-
-      old_caps = self->caps;
-      self->caps = new_caps;
-      if (old_caps)
-        gst_caps_unref (old_caps);
-      break;
-    }
-    case PROP_RTCP_TTL_MC:
-      self->rtcp_ttl_mc = g_value_get_uint (value);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
-}
-
-static void
-gst_rtp_src_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec)
-{
-  GstRtpSrc *self = GST_RTP_SRC (object);
-
-  switch (prop_id) {
-    case PROP_URI:
-      if (self->uri)
-        g_value_take_string (value, gst_uri_to_string (self->uri));
-      else
-        g_value_set_string (value, NULL);
-      break;
-    case PROP_ENCODING_NAME:
-      g_value_set_string (value, self->encoding_name);
-      break;
-    case PROP_LATENCY:
-      g_value_set_uint (value, self->latency);
-      break;
-    case PROP_ENABLE_RTCP:
-      g_value_set_boolean (value, self->enable_rtcp);
-      break;
-    case PROP_MULTICAST_IFACE:
-      g_value_set_string (value, self->multicast_iface);
-      break;
-    case PROP_BUFFER_SIZE:
-      g_value_set_uint (value, self->buffer_size);
-      break;
-    case PROP_TIMEOUT:
-      g_value_set_uint64 (value, self->timeout);
-      break;
-    case PROP_PT_CHANGE:
-      g_value_set_uint (value, self->pt_change);
-      break;
-    case PROP_PT_SELECT:
-      g_value_set_uint (value, self->pt_select);
-      break;
-    case PROP_SSRC_CHANGE:
-      g_value_set_uint (value, self->ssrc_change);
-      break;
-    case PROP_SSRC_SELECT:
-      g_value_set_uint (value, self->ssrc_select);
-      break;
-    case PROP_CAPS:
-      gst_value_set_caps (value, self->caps);
-      break;
-    case PROP_RTCP_TTL_MC:
-      g_value_set_uint (value, self->rtcp_ttl_mc);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
 }
 
 static void
@@ -815,7 +438,6 @@ gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
   GST_WARNING_OBJECT(self, "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", arg0, arg1);
 }
 
-
 static gboolean
 gst_rtp_src_start (GstRtpSrc * self)
 {
@@ -1045,7 +667,6 @@ gst_rtp_src_start (GstRtpSrc * self)
   return TRUE;
 }
 
-
 static GstStateChangeReturn
 gst_rtp_src_change_state (GstElement * element, GstStateChange transition)
 {
@@ -1086,51 +707,6 @@ start_failed:
     GST_DEBUG_OBJECT (self, "start failed");
     return GST_STATE_CHANGE_FAILURE;
   }
-}
-
-static void
-gst_rtp_src_finalize (GObject * gobject)
-{
-  GstRtpSrc *src = GST_RTP_SRC (gobject);
-
-  if (src->uri)
-    gst_uri_unref (src->uri);
-  if (src->encoding_name)
-    g_free (src->encoding_name);
-
-  G_OBJECT_CLASS (parent_class)->finalize (gobject);
-}
-
-static void
-gst_rtp_src_init (GstRtpSrc * self)
-{
-  self->uri = gst_uri_from_string (DEFAULT_PROP_URI);
-  self->encoding_name = DEFAULT_PROP_ENCODING_NAME;
-  self->ghostpad = NULL;
-  self->n_ptdemux_pads = 0;
-  self->n_rtpbin_pads = 0;
-  self->enable_rtcp = DEFAULT_ENABLE_RTCP;
-  self->multicast_iface = DEFAULT_PROP_MULTICAST_IFACE;
-  self->buffer_size = DEFAULT_BUFFER_SIZE;
-  self->latency = DEFAULT_LATENCY_MS;
-  self->timeout = DEFAULT_PROP_TIMEOUT;
-  self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
-  self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
-  self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
-  self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
-  self->caps = NULL;
-  self->rtcp_ttl_mc = DEFAULT_PROP_RTCP_TTL_MC;
-
-  self->rtpheaderchange = NULL;
-
-  GST_DEBUG_OBJECT (self, "rtpsrc initialised");
-}
-
-gboolean
-rtp_src_init (GstPlugin * plugin)
-{
-  return gst_element_register (plugin,
-      "rtpsrc", GST_RANK_NONE, GST_TYPE_RTP_SRC);
 }
 
 static guint
@@ -1192,4 +768,452 @@ gst_rtp_src_is_multicast (const gchar * ip_addr)
     return TRUE;
 
   return FALSE;
+}
+
+static void
+gst_rtp_src_finalize (GObject * gobject)
+{
+  GstRtpSrc *src = GST_RTP_SRC (gobject);
+
+  if (src->uri)
+    gst_uri_unref (src->uri);
+  if (src->encoding_name)
+    g_free (src->encoding_name);
+
+  G_OBJECT_CLASS (parent_class)->finalize (gobject);
+}
+
+static void
+gst_rtp_src_set_property (GObject * object, guint prop_id,
+    const GValue * value, GParamSpec * pspec)
+{
+  GstRtpSrc *self = GST_RTP_SRC (object);
+  GstCaps *caps = NULL;
+
+  switch (prop_id) {
+    case PROP_URI:{
+      gchar *uri = NULL;
+      if (self->uri)
+        gst_uri_unref (self->uri);
+      self->uri = gst_uri_from_string (g_value_get_string (value));
+
+      gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
+      if (self->rtp_src) {
+        uri = g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri), gst_uri_get_port(self->uri));
+        g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
+        g_free (uri);
+      }
+      if (self->enable_rtcp && self->rtcp_src) {
+        if (gst_rtp_src_is_multicast (gst_uri_get_host(self->uri))) {
+          uri =
+              g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri),
+              gst_uri_get_port(self->uri) + 1);
+          g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
+          g_free (uri);
+        } else {
+          g_object_set (G_OBJECT (self->rtcp_src),
+              "port", gst_uri_get_port(self->uri) + 1, NULL);
+        }
+        g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
+      }
+    }
+      break;
+    case PROP_ENCODING_NAME:
+      if (self->encoding_name)
+        g_free (self->encoding_name);
+      self->encoding_name = g_value_dup_string (value);
+      GST_INFO_OBJECT (self,
+          "Force encoding name (%s), do you know what you are doing?",
+          self->encoding_name);
+      if (self->rtp_src) {
+        GST_INFO_OBJECT (self, "Requesting PT map");
+        caps = gst_rtp_src_request_pt_map_cb (NULL, 0, 96, self);
+        g_object_set (G_OBJECT (self->rtp_src), "caps", caps, NULL);
+        gst_caps_unref (caps);
+      }
+      break;
+    case PROP_LATENCY:
+      self->latency = g_value_get_uint (value);
+      if (self->rtpbin)
+        g_object_set (G_OBJECT (self->rtpbin), "latency", self->latency, NULL);
+      break;
+    case PROP_ENABLE_RTCP:
+      self->enable_rtcp = g_value_get_boolean (value);
+      GST_DEBUG_OBJECT (self, "set enable-rtcp: %d", self->enable_rtcp);
+      break;
+    case PROP_MULTICAST_IFACE:
+      if (self->multicast_iface)
+        g_free (self->multicast_iface);
+      self->multicast_iface = g_value_dup_string (value);
+      GST_DEBUG_OBJECT (self, "set multicast-iface: %s", self->multicast_iface);
+      xgst_barco_propagate_setting (self, "multicast-iface",
+          self->multicast_iface);
+      break;
+    case PROP_BUFFER_SIZE:
+      self->buffer_size = g_value_get_uint (value);
+      GST_DEBUG_OBJECT (self, "set buffer-size: %u", self->buffer_size);
+      xgst_barco_propagate_setting (self, "buffer-size", self->buffer_size);
+      break;
+    case PROP_TIMEOUT:
+      self->timeout = g_value_get_uint64 (value);
+      xgst_barco_propagate_setting (self, "timeout", self->timeout);
+      break;
+    case PROP_PT_CHANGE:
+      self->pt_change = g_value_get_uint (value);
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "pt-change",
+            self->pt_change, NULL);
+      GST_DEBUG_OBJECT (self, "set pt change: %u", self->pt_change);
+      break;
+    case PROP_PT_SELECT:
+      self->pt_select = g_value_get_uint (value);
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "pt-select",
+            self->pt_select, NULL);
+      GST_DEBUG_OBJECT (self, "set pt select: %u", self->pt_select);
+      break;
+    case PROP_SSRC_CHANGE:
+      self->ssrc_change = g_value_get_uint (value);
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "ssrc-change",
+            self->ssrc_change, NULL);
+      GST_DEBUG_OBJECT (self, "set ssrc change: %u", self->ssrc_change);
+      break;
+    case PROP_SSRC_SELECT:
+      self->ssrc_select = g_value_get_uint (value);
+      if (self->rtpheaderchange)
+        g_object_set (G_OBJECT (self->rtpheaderchange), "ssrc-select",
+            self->ssrc_select, NULL);
+      GST_DEBUG_OBJECT (self, "set ssrc select: %u", self->ssrc_select);
+      break;
+    case PROP_CAPS:
+    {
+      const GstCaps *new_caps_val = gst_value_get_caps (value);
+      GstCaps *new_caps;
+      GstCaps *old_caps;
+
+      if (new_caps_val == NULL) {
+        new_caps = gst_caps_new_any ();
+      } else {
+        GST_DEBUG_OBJECT (self, "Setting caps to %" GST_PTR_FORMAT,
+            new_caps_val);
+        new_caps = gst_caps_copy (new_caps_val);
+      }
+
+      old_caps = self->caps;
+      self->caps = new_caps;
+      if (old_caps)
+        gst_caps_unref (old_caps);
+      break;
+    }
+    case PROP_RTCP_TTL_MC:
+      self->rtcp_ttl_mc = g_value_get_uint (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+gst_rtp_src_get_property (GObject * object, guint prop_id,
+    GValue * value, GParamSpec * pspec)
+{
+  GstRtpSrc *self = GST_RTP_SRC (object);
+
+  switch (prop_id) {
+    case PROP_URI:
+      if (self->uri)
+        g_value_take_string (value, gst_uri_to_string (self->uri));
+      else
+        g_value_set_string (value, NULL);
+      break;
+    case PROP_ENCODING_NAME:
+      g_value_set_string (value, self->encoding_name);
+      break;
+    case PROP_LATENCY:
+      g_value_set_uint (value, self->latency);
+      break;
+    case PROP_ENABLE_RTCP:
+      g_value_set_boolean (value, self->enable_rtcp);
+      break;
+    case PROP_MULTICAST_IFACE:
+      g_value_set_string (value, self->multicast_iface);
+      break;
+    case PROP_BUFFER_SIZE:
+      g_value_set_uint (value, self->buffer_size);
+      break;
+    case PROP_TIMEOUT:
+      g_value_set_uint64 (value, self->timeout);
+      break;
+    case PROP_PT_CHANGE:
+      g_value_set_uint (value, self->pt_change);
+      break;
+    case PROP_PT_SELECT:
+      g_value_set_uint (value, self->pt_select);
+      break;
+    case PROP_SSRC_CHANGE:
+      g_value_set_uint (value, self->ssrc_change);
+      break;
+    case PROP_SSRC_SELECT:
+      g_value_set_uint (value, self->ssrc_select);
+      break;
+    case PROP_CAPS:
+      gst_value_set_caps (value, self->caps);
+      break;
+    case PROP_RTCP_TTL_MC:
+      g_value_set_uint (value, self->rtcp_ttl_mc);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+gst_rtp_src_class_init (GstRtpSrcClass * klass)
+{
+  GObjectClass *oclass = G_OBJECT_CLASS (klass);
+  GstElementClass *gstelement_class = GST_ELEMENT_CLASS (klass);
+
+  oclass->set_property = gst_rtp_src_set_property;
+  oclass->get_property = gst_rtp_src_get_property;
+  oclass->finalize = gst_rtp_src_finalize;
+
+  /**
+   * GstRtpSrc::uri
+   *
+   * uri to establish a stream to. All GStreamer parameters can be
+   * encoded in the URI, this URI format is RFC compliant.
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_URI,
+      g_param_spec_string ("uri", "URI", "URI to save",
+          DEFAULT_PROP_URI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSrc::encoding-name
+   *
+   * Specify the encoding name of the stream, typically when no SDP is
+   * obtained. This steers auto plugging and avoids wrong detection.
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_ENCODING_NAME,
+      g_param_spec_string ("encoding-name", "Encoding name",
+          "force encoding-name on depayloader", DEFAULT_PROP_ENCODING_NAME,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSrc::latency
+   *
+   * Default latency is 50, for MPEG4 large GOP sizes, this needs to be
+   * increased
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_LATENCY,
+      g_param_spec_uint ("latency", "Buffer latency in ms",
+          "Default amount of ms to buffer in the jitterbuffers", 0, G_MAXUINT,
+          DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::enable-rtcp
+   *
+   * Enable RTCP (Real Time Control Protocol)
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_ENABLE_RTCP,
+      g_param_spec_boolean ("enable-rtcp", "Enable RTCP",
+          "Enable RTCP feedback in RTP", DEFAULT_ENABLE_RTCP,
+          G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::multicast-iface
+   *
+   * On machines with multiple interfaces, lock the socket to the
+   * interface instead of the routing.
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass, PROP_MULTICAST_IFACE,
+      g_param_spec_string ("multicast-iface", "Multicast Interface",
+          "Multicast Interface to listen on", DEFAULT_PROP_MULTICAST_IFACE,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSrc::buffer-size
+   *
+   * Size of the kernel receive buffer in bytes
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass, PROP_BUFFER_SIZE,
+      g_param_spec_uint ("buffer-size", "Kernel receive buffer size",
+          "Size of the kernel receive buffer in bytes, 0=default", 0, G_MAXUINT,
+          DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::timeout
+   *
+   * UDP timeout value
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_TIMEOUT,
+      g_param_spec_uint64 ("timeout", "Timeout",
+          "Post a message after timeout microseconds (0 = disabled)", 0,
+          G_MAXUINT64, DEFAULT_PROP_TIMEOUT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSrc::pt-change
+   *
+   * Change the payload type value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_PT_CHANGE,
+      g_param_spec_uint ("pt-change",
+          "Payload type to change to",
+          "Payload type with which to overwrite a previous value (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_PT_NUMBER,
+          GST_RTPPTCHANGE_MAX_PT_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_PT_NUMBER, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::pt-select
+   *
+   * Select based on the payload type value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_PT_SELECT,
+      g_param_spec_uint ("pt-select",
+          "Payload type to select",
+          "Payload type to select, others are dropped (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_PT_NUMBER,
+          GST_RTPPTCHANGE_MAX_PT_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_PT_SELECT, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::ssrc-change
+   *
+   * Change the SSRC value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_SSRC_CHANGE,
+      g_param_spec_uint ("ssrc-change",
+          "Payload type to change to",
+          "Payload type with which to overwrite a previous value (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
+          GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_SSRC_NUMBER, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::ssrc-select
+   *
+   * Select based on the SSRC value in the packet
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass,
+      PROP_SSRC_SELECT,
+      g_param_spec_uint ("ssrc-select",
+          "Payload type to select",
+          "Payload type to select, others are dropped (0 = disabled)",
+          GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
+          GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
+          GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT, G_PARAM_READWRITE));
+
+  /**
+   * GstRtpSrc::caps
+   *
+   * The RTP caps of the stream coming in
+   *
+   * Since: 1.0.0
+   */
+  g_object_class_install_property (oclass, PROP_CAPS,
+      g_param_spec_boxed ("caps", "Caps",
+          "The caps of the incoming stream", GST_TYPE_CAPS,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSrc::rtcp-ttl-mc
+   *
+   * This parameter applies to incoming multicast traffic only.
+   *
+   * Video sources on occasion deliver RTCP along RTP payload, rtpsrc then would
+   * respond with Receiver Reports on the RTCP socket.
+   *
+   * While unicast delivery usually gets sufficent TTL that
+   * defaults to /proc/sys/net/ipv4/ip_default_ttl,
+   * multicast TTL has to be specified explicitly as it's
+   * system default value of 1 is immutable.
+   *
+   * Since: ??
+   */
+  g_object_class_install_property (oclass,
+      PROP_RTCP_TTL_MC,
+      g_param_spec_uint ("rtcp-ttl-mc",
+          "Time-to-live for multicast RTCP Receiver Reports",
+          "Time-to-live for multicast RTCP Receiver Reports",
+          DEFAULT_PROP_RTCP_TTL_MC,
+          64,
+          DEFAULT_PROP_RTCP_TTL_MC, G_PARAM_READWRITE));
+
+
+  gst_element_class_add_pad_template (gstelement_class,
+      gst_static_pad_template_get (&src_template));
+
+  gstelement_class->change_state = GST_DEBUG_FUNCPTR (gst_rtp_src_change_state);
+
+  gst_element_class_set_static_metadata (gstelement_class,
+      "rtpsrc",
+      "Generic/Bin/Src",
+      "Barco Rtp src",
+      "Thijs Vermeir <thijs.vermeir@barco.com>, "
+      "Marc Leeman <marc.leeman@barco.com>, "
+      "Paul Henrys <paul.henrys'daubigny@barco.com>");
+
+  GST_DEBUG_CATEGORY_INIT (rtp_src_debug,
+      "barcortpsrc", 0, "Barco rtp send bin");
+}
+
+static void
+gst_rtp_src_init (GstRtpSrc * self)
+{
+  self->uri = gst_uri_from_string (DEFAULT_PROP_URI);
+  self->encoding_name = DEFAULT_PROP_ENCODING_NAME;
+  self->ghostpad = NULL;
+  self->n_ptdemux_pads = 0;
+  self->n_rtpbin_pads = 0;
+  self->enable_rtcp = DEFAULT_ENABLE_RTCP;
+  self->multicast_iface = DEFAULT_PROP_MULTICAST_IFACE;
+  self->buffer_size = DEFAULT_BUFFER_SIZE;
+  self->latency = DEFAULT_LATENCY_MS;
+  self->timeout = DEFAULT_PROP_TIMEOUT;
+  self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
+  self->pt_change = GST_RTPPTCHANGE_DEFAULT_PT_NUMBER;
+  self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
+  self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
+  self->caps = NULL;
+  self->rtcp_ttl_mc = DEFAULT_PROP_RTCP_TTL_MC;
+
+  self->rtpheaderchange = NULL;
+
+  GST_DEBUG_OBJECT (self, "rtpsrc initialised");
+}
+
+gboolean
+rtp_src_init (GstPlugin * plugin)
+{
+  return gst_element_register (plugin,
+      "rtpsrc", GST_RANK_NONE, GST_TYPE_RTP_SRC);
 }
