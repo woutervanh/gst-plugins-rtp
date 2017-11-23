@@ -68,7 +68,7 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name);
 
 static GstPad *
 gst_rtp_sink_request_new_pad (GstElement * element,
-    GstPadTemplate * temp, const gchar * name, const GstCaps * caps)
+    GstPadTemplate * templ, const gchar * name, const GstCaps * caps)
 {
   GstRtpSink *self = GST_RTP_SINK (element);
   GstPad *ghost = NULL;
