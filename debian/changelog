@@ -1,3 +1,27 @@
+gst-plugins-barcortp (1.12.3~barco9+1) stretch-barco-testing; urgency=medium
+
+  [ Niels De Graef ]
+  * Tests: add rtpsink/rtpsrc from gst-plugins-barcomgs
+  * Build: add Jenkinsfile
+  * Jenkins: always notify on slack after build.
+  * Jenkins: only notify after change
+  * GstRtpSink: check for ghostpad's target NULL
+  * Build: fix barco-package-build with tests enabled.
+  * GstRtpSink: use G_DECLARE_FINAL_TYPE
+  * GstRtpSrc: use G_DECLARE_FINAL_TYPE
+
+  [ Marc Leeman ]
+  * rtpsink: sync naming
+  * rtpsink: warning if request pad is not a sink
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 23 Nov 2017 17:47:41 +0100
+
+gst-plugins-barcortp (1.12.3~barco9+0) stretch-barco-testing; urgency=medium
+
+  * Rebuild
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 23 Nov 2017 17:47:30 +0100
+
 gst-plugins-barcortp (1.12.2~barco9+7) stretch-barco-testing; urgency=medium
 
   * rtpsink: input validation
