@@ -6,7 +6,8 @@ include_directories (
 )
 
 add_executable (rtpsinktest rtpsink.c)
-add_test(rtpsink rtpsinktest)
+add_test(NAME rtpsink
+         COMMAND rtpsinktest "--gst-plugin-path=${CMAKE_BINARY_DIR}/src/")
 
 target_link_libraries (rtpsinktest
 	${GLIB_LIBRARIES}
@@ -16,7 +17,8 @@ target_link_libraries (rtpsinktest
 )
 
 add_executable (rtpsrctest rtpsrc.c)
-add_test(rtpsrc rtpsrctest)
+add_test(NAME rtpsrc
+         COMMAND rtpsrctest "--gst-plugin-path=${CMAKE_BINARY_DIR}/src/")
 
 target_link_libraries (rtpsrctest
 	${GLIB_LIBRARIES}
