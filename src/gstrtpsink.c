@@ -10,6 +10,8 @@
 #include <config.h>
 #endif
 
+#include <gst/gsturi.h>
+#include <gio/gio.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -19,6 +21,26 @@
 
 GST_DEBUG_CATEGORY_STATIC (rtp_sink_debug);
 #define GST_CAT_DEFAULT rtp_sink_debug
+
+struct _GstRtpSink
+{
+  GstBin parent_instance;
+
+  GstUri *uri;
+  gint npads;
+  gchar *last_uri;
+
+
+  guint cidr;
+  gint ttl;
+  gint ttl_mc;
+  gint pt;
+  gint src_port;
+
+  GstElement *rtpbin;
+
+  GMutex lock;
+};
 
 enum
 {
@@ -57,14 +79,8 @@ G_DEFINE_TYPE_WITH_CODE (GstRtpSink, gst_rtp_sink, GST_TYPE_BIN,
 #define GST_RTP_SINK_LOCK(obj) (g_mutex_lock (GST_RTP_SINK_GET_LOCK(obj)))
 #define GST_RTP_SINK_UNLOCK(obj) (g_mutex_unlock (GST_RTP_SINK_GET_LOCK(obj)))
 
-static void gst_rtp_sink_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec);
-static void gst_rtp_sink_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec);
-static void gst_rtp_sink_finalize (GObject * gobject);
 static gboolean gst_rtp_sink_is_multicast (const gchar * ip_addr);
-static GstPad*
-gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name);
+static GstPad* gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name);
 
 static GstPad *
 gst_rtp_sink_request_new_pad (GstElement * element,
@@ -133,176 +149,6 @@ gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
 
   self->npads--;
   GST_RTP_SINK_UNLOCK(self);
-}
-
-static void
-gst_rtp_sink_class_init (GstRtpSinkClass * klass)
-{
-  GObjectClass *oclass = G_OBJECT_CLASS (klass);
-  GstElementClass *gstelement_class = GST_ELEMENT_CLASS (klass);
-
-  oclass->set_property = gst_rtp_sink_set_property;
-  oclass->get_property = gst_rtp_sink_get_property;
-  oclass->finalize = gst_rtp_sink_finalize;
-
-  gstelement_class->request_new_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_request_new_pad);
-  gstelement_class->release_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_release_pad);
-
-  /**
-   * GstRtpSink::uri
-   *
-   * uri to establish a stream to. All GStreamer parameters can be
-   * encoded in the URI, this URI format is RFC compliant.
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_URI,
-      g_param_spec_string ("uri", "URI", "URI to save",
-          DEFAULT_PROP_URI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSink::ttl
-   *
-   * Unicast TTL (for use in routed networks)
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_TTL,
-      g_param_spec_int ("ttl", "Unicast TTL",
-          "Used for setting the unicast TTL parameter",
-          0, 255, DEFAULT_PROP_TTL,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSink::ttl-mc
-   *
-   * Multicast TTL (for use in routed networks)
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_TTL_MC,
-      g_param_spec_int ("ttl-mc", "Multicast TTL",
-          "Used for setting the multicast TTL parameter", 0, 255,
-          DEFAULT_PROP_TTL_MC, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSink::src-port
-   *
-   * Set source port for sending data (default random)
-   *
-   * Since: 0.10.5
-   */
-  g_object_class_install_property (oclass, PROP_SRC_PORT,
-      g_param_spec_int ("src-port", "src-port", "The sender source port"
-          " (0 = dynamic)",
-          0, 65535, DEFAULT_SRC_PORT,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSink::cidr
-   *
-   * CIDR Network Mask (for use in routed networks)
-   *
-   * Since: 1.10.0
-   */
-  g_object_class_install_property (oclass, PROP_CIDR,
-      g_param_spec_uint ("cidr", "CIDR Network Mask to generate new IPs with",
-          "CIDR Network Mask",
-          0, 32, DEFAULT_PROP_CIDR,
-          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
-
-  /**
-   * GstRtpSink: n-pads
-   *
-   * The number of active pads (requested).
-   *
-   * Since: 1.10.0
-   */
-  g_object_class_install_property (oclass, PROP_NPADS,
-      g_param_spec_uint ("n-pads", "Number of sink pads",
-          "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
-
-  gst_element_class_add_pad_template (gstelement_class,
-      gst_static_pad_template_get (&sink_template));
-
-  gst_element_class_set_static_metadata (gstelement_class,
-      "RtpSink",
-      "Generic/Bin/Sink",
-      "Barco Rtp sink",
-      "Thijs Vermeir <thijs.vermeir@barco.com>, "
-      "Marc Leeman <marc.leeman@barco.com>, "
-      "Paul Henrys <visechelle@gmail.com>");
-
-  GST_DEBUG_CATEGORY_INIT (rtp_sink_debug,
-      "barcortpsink", 0, "Barco rtp send bin");
-
-}
-
-static void
-gst_rtp_sink_set_property (GObject * object, guint prop_id,
-    const GValue * value, GParamSpec * pspec)
-{
-  GstRtpSink *self = GST_RTP_SINK (object);
-
-  switch (prop_id) {
-    case PROP_URI:
-      if (self->uri)
-        gst_uri_unref (self->uri);
-      self->uri = gst_uri_from_string (g_value_get_string (value));
-      if(self->uri){
-        gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
-      }
-      break;
-    case PROP_CIDR:
-      self->cidr = g_value_get_uint (value);
-      break;
-    case PROP_TTL:
-      self->ttl = g_value_get_int (value);
-      break;
-    case PROP_TTL_MC:
-      self->ttl_mc = g_value_get_int (value);
-      break;
-    case PROP_SRC_PORT:
-      self->src_port = g_value_get_int (value);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
-}
-
-static void
-gst_rtp_sink_get_property (GObject * object, guint prop_id,
-    GValue * value, GParamSpec * pspec)
-{
-  GstRtpSink *self = GST_RTP_SINK (object);
-
-  switch (prop_id) {
-    case PROP_URI:
-      if (self->uri)
-        g_value_take_string (value, gst_uri_to_string (self->uri));
-      else
-        g_value_set_string (value, NULL);
-      break;
-    case PROP_CIDR:
-      g_value_set_uint (value, self->cidr);
-      break;
-    case PROP_TTL:
-      g_value_set_int (value, self->ttl);
-      break;
-    case PROP_TTL_MC:
-      g_value_set_int (value, self->ttl_mc);
-      break;
-    case PROP_SRC_PORT:
-      g_value_set_int (value, self->src_port);
-      break;
-    case PROP_NPADS:
-      g_value_set_uint (value, self->npads);
-      break;
-    default:
-      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
-      break;
-  }
 }
 
 static void
@@ -706,68 +552,6 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   return NULL;
 }
 
-static void
-gst_rtp_sink_finalize (GObject * gobject)
-{
-  GstRtpSink *self = GST_RTP_SINK (gobject);
-
-  if (self->uri)
-    gst_uri_unref (self->uri);
-
-  g_mutex_clear (&self->lock);
-  G_OBJECT_CLASS (parent_class)->finalize (gobject);
-}
-
-static void
-gst_rtp_sink_init (GstRtpSink * self)
-{
-  self->npads = 0;
-  self->rtpbin = NULL;
-  self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
-  self->cidr = DEFAULT_PROP_CIDR;
-  self->ttl = DEFAULT_PROP_TTL;
-  self->ttl_mc = DEFAULT_PROP_TTL_MC;
-  self->src_port = DEFAULT_SRC_PORT;
-  g_mutex_init (&self->lock);
-
-  {
-    GST_INFO_OBJECT(self, "Initialising rtpbin element.");
-
-    self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
-    g_return_if_fail (self->rtpbin != NULL);
-
-    if (g_object_class_find_property (G_OBJECT_GET_CLASS (self->rtpbin),
-          "use-pipeline-clock")) {
-      g_object_set (G_OBJECT (self->rtpbin), "use-pipeline-clock", TRUE, NULL);
-    } else {
-      GST_WARNING_OBJECT (self,
-          "rtpbin has no use-pipeline-clock, running old version?");
-    }
-
-    GST_DEBUG_OBJECT (self, "Connecting callbacks");
-    g_signal_connect (self->rtpbin, "pad-added",
-        G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
-    g_signal_connect (self->rtpbin, "pad-removed",
-        G_CALLBACK (gst_rtp_sink_rtpbin_pad_removed_cb), self);
-    g_signal_connect (self->rtpbin, "element-added",
-        G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
-
-    gst_bin_add_many (GST_BIN (self), self->rtpbin, NULL);
-
-    gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
-  }
-
-  GST_OBJECT_FLAG_SET (GST_OBJECT (self), GST_ELEMENT_FLAG_SINK);
-  GST_DEBUG_OBJECT (self, "rtpsink initialised");
-}
-
-gboolean
-rtp_sink_init (GstPlugin * plugin)
-{
-  return gst_element_register (plugin,
-      "rtpsink", GST_RANK_NONE, GST_TYPE_RTP_SINK);
-}
-
 static guint
 gst_rtp_sink_uri_get_type (GType type)
 {
@@ -827,4 +611,235 @@ gst_rtp_sink_is_multicast (const gchar * ip_addr)
     return TRUE;
 
   return FALSE;
+}
+
+static void
+gst_rtp_sink_set_property (GObject * object, guint prop_id,
+    const GValue * value, GParamSpec * pspec)
+{
+  GstRtpSink *self = GST_RTP_SINK (object);
+
+  switch (prop_id) {
+    case PROP_URI:
+      if (self->uri)
+        gst_uri_unref (self->uri);
+      self->uri = gst_uri_from_string (g_value_get_string (value));
+      if(self->uri){
+        gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
+      }
+      break;
+    case PROP_CIDR:
+      self->cidr = g_value_get_uint (value);
+      break;
+    case PROP_TTL:
+      self->ttl = g_value_get_int (value);
+      break;
+    case PROP_TTL_MC:
+      self->ttl_mc = g_value_get_int (value);
+      break;
+    case PROP_SRC_PORT:
+      self->src_port = g_value_get_int (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+gst_rtp_sink_get_property (GObject * object, guint prop_id,
+    GValue * value, GParamSpec * pspec)
+{
+  GstRtpSink *self = GST_RTP_SINK (object);
+
+  switch (prop_id) {
+    case PROP_URI:
+      if (self->uri)
+        g_value_take_string (value, gst_uri_to_string (self->uri));
+      else
+        g_value_set_string (value, NULL);
+      break;
+    case PROP_CIDR:
+      g_value_set_uint (value, self->cidr);
+      break;
+    case PROP_TTL:
+      g_value_set_int (value, self->ttl);
+      break;
+    case PROP_TTL_MC:
+      g_value_set_int (value, self->ttl_mc);
+      break;
+    case PROP_SRC_PORT:
+      g_value_set_int (value, self->src_port);
+      break;
+    case PROP_NPADS:
+      g_value_set_uint (value, self->npads);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+gst_rtp_sink_finalize (GObject * gobject)
+{
+  GstRtpSink *self = GST_RTP_SINK (gobject);
+
+  if (self->uri)
+    gst_uri_unref (self->uri);
+
+  g_mutex_clear (&self->lock);
+  G_OBJECT_CLASS (parent_class)->finalize (gobject);
+}
+
+static void
+gst_rtp_sink_class_init (GstRtpSinkClass * klass)
+{
+  GObjectClass *oclass = G_OBJECT_CLASS (klass);
+  GstElementClass *gstelement_class = GST_ELEMENT_CLASS (klass);
+
+  oclass->set_property = gst_rtp_sink_set_property;
+  oclass->get_property = gst_rtp_sink_get_property;
+  oclass->finalize = gst_rtp_sink_finalize;
+
+  gstelement_class->request_new_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_request_new_pad);
+  gstelement_class->release_pad = GST_DEBUG_FUNCPTR (gst_rtp_sink_release_pad);
+
+  /**
+   * GstRtpSink::uri
+   *
+   * uri to establish a stream to. All GStreamer parameters can be
+   * encoded in the URI, this URI format is RFC compliant.
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_URI,
+      g_param_spec_string ("uri", "URI", "URI to save",
+          DEFAULT_PROP_URI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink::ttl
+   *
+   * Unicast TTL (for use in routed networks)
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_TTL,
+      g_param_spec_int ("ttl", "Unicast TTL",
+          "Used for setting the unicast TTL parameter",
+          0, 255, DEFAULT_PROP_TTL,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink::ttl-mc
+   *
+   * Multicast TTL (for use in routed networks)
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_TTL_MC,
+      g_param_spec_int ("ttl-mc", "Multicast TTL",
+          "Used for setting the multicast TTL parameter", 0, 255,
+          DEFAULT_PROP_TTL_MC, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink::src-port
+   *
+   * Set source port for sending data (default random)
+   *
+   * Since: 0.10.5
+   */
+  g_object_class_install_property (oclass, PROP_SRC_PORT,
+      g_param_spec_int ("src-port", "src-port", "The sender source port"
+          " (0 = dynamic)",
+          0, 65535, DEFAULT_SRC_PORT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink::cidr
+   *
+   * CIDR Network Mask (for use in routed networks)
+   *
+   * Since: 1.10.0
+   */
+  g_object_class_install_property (oclass, PROP_CIDR,
+      g_param_spec_uint ("cidr", "CIDR Network Mask to generate new IPs with",
+          "CIDR Network Mask",
+          0, 32, DEFAULT_PROP_CIDR,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink: n-pads
+   *
+   * The number of active pads (requested).
+   *
+   * Since: 1.10.0
+   */
+  g_object_class_install_property (oclass, PROP_NPADS,
+      g_param_spec_uint ("n-pads", "Number of sink pads",
+          "Read the number of sink pads", 0, G_MAXUINT, 0, G_PARAM_READABLE));
+
+  gst_element_class_add_pad_template (gstelement_class,
+      gst_static_pad_template_get (&sink_template));
+
+  gst_element_class_set_static_metadata (gstelement_class,
+      "RtpSink",
+      "Generic/Bin/Sink",
+      "Barco Rtp sink",
+      "Thijs Vermeir <thijs.vermeir@barco.com>, "
+      "Marc Leeman <marc.leeman@barco.com>, "
+      "Paul Henrys <visechelle@gmail.com>");
+
+  GST_DEBUG_CATEGORY_INIT (rtp_sink_debug,
+      "barcortpsink", 0, "Barco rtp send bin");
+}
+
+static void
+gst_rtp_sink_init (GstRtpSink * self)
+{
+  self->npads = 0;
+  self->rtpbin = NULL;
+  self->uri = gst_uri_from_string(DEFAULT_PROP_URI);
+  self->cidr = DEFAULT_PROP_CIDR;
+  self->ttl = DEFAULT_PROP_TTL;
+  self->ttl_mc = DEFAULT_PROP_TTL_MC;
+  self->src_port = DEFAULT_SRC_PORT;
+  g_mutex_init (&self->lock);
+
+  {
+    GST_INFO_OBJECT(self, "Initialising rtpbin element.");
+
+    self->rtpbin = gst_element_factory_make ("rtpbin", NULL);
+    g_return_if_fail (self->rtpbin != NULL);
+
+    if (g_object_class_find_property (G_OBJECT_GET_CLASS (self->rtpbin),
+          "use-pipeline-clock")) {
+      g_object_set (G_OBJECT (self->rtpbin), "use-pipeline-clock", TRUE, NULL);
+    } else {
+      GST_WARNING_OBJECT (self,
+          "rtpbin has no use-pipeline-clock, running old version?");
+    }
+
+    GST_DEBUG_OBJECT (self, "Connecting callbacks");
+    g_signal_connect (self->rtpbin, "pad-added",
+        G_CALLBACK (gst_rtp_sink_rtpbin_pad_added_cb), self);
+    g_signal_connect (self->rtpbin, "pad-removed",
+        G_CALLBACK (gst_rtp_sink_rtpbin_pad_removed_cb), self);
+    g_signal_connect (self->rtpbin, "element-added",
+        G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
+
+    gst_bin_add_many (GST_BIN (self), self->rtpbin, NULL);
+
+    gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
+  }
+
+  GST_OBJECT_FLAG_SET (GST_OBJECT (self), GST_ELEMENT_FLAG_SINK);
+  GST_DEBUG_OBJECT (self, "rtpsink initialised");
+}
+
+gboolean
+rtp_sink_init (GstPlugin * plugin)
+{
+  return gst_element_register (plugin,
+      "rtpsink", GST_RANK_NONE, GST_TYPE_RTP_SINK);
 }
