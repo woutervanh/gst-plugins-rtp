@@ -76,6 +76,11 @@ gst_rtp_sink_request_new_pad (GstElement * element,
   GST_DEBUG_OBJECT (self, "Request new pad with caps: %" GST_PTR_FORMAT, caps);
   g_return_val_if_fail (self->uri != NULL, NULL);
 
+  if (templ->direction != GST_PAD_SINK) {
+    GST_WARNING_OBJECT (self, "Request pad that is not a SINK pad");
+    return NULL;
+  }
+
   GST_RTP_SINK_LOCK(self);
   ghost = gst_rtp_sink_create_udp(self, name);
 
