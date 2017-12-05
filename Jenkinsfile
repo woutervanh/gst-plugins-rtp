@@ -18,7 +18,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     cd build
-                    ctest
+                    ctest --output-on-failure
                 '''
             }
         }
