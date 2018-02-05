@@ -115,6 +115,8 @@ const static RtpParameters RTP_DYNAMIC_PARAMETERS[] = {
   {0, "RAW-RGB24", "video", 90000},
   {0, "VP8", "video", 90000},
   {0, "VP8-DRAFT-IETF-01", "video", 90000},
+  {0, "VP9", "video", 90000},
+  {0, "VP9-DRAFT-IETF-01", "video", 90000},
   /* application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)V2D, width=(int)1920, original-width=(int)1920, height=(int)1200, original-height=(int)1200, slice-size=(int)36, format=(int)0, max-slice-number=(int)1000, stereo-mode=(int)0, comp-mode=(int)0, motion-comp-mode=(int)0, ssrc=(uint)2621274064, payload=(int)96, timestamp-offset=(uint)1572929903, seqnum-offset=(uint)29225 */
   {0, "V2D", "video", 90000 },
   /*application/x-rtp, media=(string)application, clock-rate=(int)9000, encoding-name=(string)X-GST */
