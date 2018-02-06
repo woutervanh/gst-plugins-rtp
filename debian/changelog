@@ -1,3 +1,13 @@
+gst-plugins-barcortp (1.12.3~barco9+2) stretch-barco-testing; urgency=medium
+
+  [ Niels De Graef ]
+  * Tests: give some output on failure.
+
+  [ Marc Leeman ]
+  * rtpparameters: support VP9
+
+ -- Marc Leeman <marc.leeman@barco.com>  Tue, 06 Feb 2018 15:38:18 +0100
+
 gst-plugins-barcortp (1.12.3~barco9+1) stretch-barco-testing; urgency=medium
 
   [ Niels De Graef ]
