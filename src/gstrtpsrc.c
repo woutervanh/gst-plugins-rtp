@@ -299,6 +299,7 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
         "clock-rate", G_TYPE_INT, 90000,
         "encoding-name", G_TYPE_STRING, "VP8",
         NULL);
+  }
   else if (g_strcmp0 (encoding_name, "VP9") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "video",
