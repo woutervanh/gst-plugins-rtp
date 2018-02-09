@@ -170,7 +170,7 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   GST_INFO_OBJECT(self, "Pad has caps %" GST_PTR_FORMAT, caps);
   if (GST_PAD_DIRECTION (pad) == GST_PAD_SINK) {
     GST_DEBUG_OBJECT (self, "Not interested in SINK pad with caps %" GST_PTR_FORMAT, caps);
-    gst_caps_unref (caps);
+    if (caps) gst_caps_unref (caps);
     return;
   }
 
@@ -287,7 +287,7 @@ gst_rtp_sink_send_uri_info(GstRtpSink *self, const GstPad * pad, const gchar* ur
 
   GST_DEBUG_OBJECT(self, "Sending signal uri %s on %" GST_PTR_FORMAT, uri, pad);
 
-  /*The message will take ownership of the structure */
+  /* The message will take ownership of the structure */
   s1 = gst_structure_new ("GstRtpSinkUriInfo",
       "uri", G_TYPE_STRING, uri,
       NULL);
