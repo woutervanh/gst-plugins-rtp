@@ -697,31 +697,6 @@ gst_rtp_src_start (GstRtpSrc * self)
         "ttl-mc", self->rtcp_ttl_mc,
         NULL);
 
-#if 0 // debug
-    {
-    GSocket *gsock = NULL;
-    gchar *name = NULL;
-    char *host = NULL;
-    guint port = 0;
-    guint ttl = 0;
-    guint ttl_mc = 0;
-
-      g_object_get (G_OBJECT (self->rtcp_sink),
-          "name", &name,
-          "host", &host,
-          "port", &port,
-          "ttl", &ttl,
-          "ttl-mc", &ttl_mc,
-          "socket", &gsock,
-      NULL);
-
-      GST_ERROR_OBJECT (self, "RTCP sink %s %s:%u; ttl prop %u real %u", name, host, port,
-        ttl, g_socket_get_ttl(gsock));
-      GST_ERROR_OBJECT (self, "RTCP sink %s %s:%u; mcast ttl prop %u real %u", name, host, port,
-        ttl_mc, g_socket_get_multicast_ttl(gsock));
-    }
-#endif
-
     ret = gst_element_set_state (self->rtcp_sink, GST_STATE_READY);
     if (ret == GST_STATE_CHANGE_FAILURE){
       GST_ERROR_OBJECT (self, "Could not set RTP sink to READY");
