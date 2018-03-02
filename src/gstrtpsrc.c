@@ -469,13 +469,13 @@ full_caps_set:
  */
 static void
 gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
-    guint arg0,
-    guint arg1,
+    guint sess_id,
+    guint ssrc,
     gpointer user_data)
 {
   GstRtpSrc *self = GST_RTP_SRC(user_data);
 
-  GST_INFO_OBJECT(self, "Dectected a new SSRC: session 0x%x, ssrc 0x%x.", arg0, arg1);
+  GST_INFO_OBJECT(self, "Dectected a new SSRC: session 0x%x, ssrc 0x%x.", sess_id, ssrc);
 }
 
 /**
@@ -489,13 +489,13 @@ gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
  */
 static void
 gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
-    guint arg0,
-    guint arg1,
+    guint sess_id,
+    guint ssrc,
     gpointer user_data)
 {
   GstRtpSrc *self = GST_RTP_SRC(user_data);
 
-  GST_WARNING_OBJECT(self, "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", arg0, arg1);
+  GST_WARNING_OBJECT(self, "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", sess_id, ssrc);
 }
 
 /**
