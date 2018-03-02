@@ -612,7 +612,7 @@ gst_rtp_src_start (GstRtpSrc * self)
   lastelt = queue;
 
   if (self->rtpheaderchange) {
-    GST_DEBUG_OBJECT (self, "Adding PT change");
+    GST_DEBUG_OBJECT (self, "Adding RTP Header change");
     gst_bin_add (GST_BIN (self), self->rtpheaderchange);
     gst_element_link (lastelt, self->rtpheaderchange);
     lastelt = self->rtpheaderchange;
