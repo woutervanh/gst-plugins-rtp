@@ -126,7 +126,7 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
   if (!G_IS_SOCKET (rtcpfd))
     GST_WARNING_OBJECT (self, "No valid socket retrieved from udpsrc");
   else
-    GST_DEBUG_OBJECT (self, "RTP UDP source has sock %p", rtcpfd);
+    GST_DEBUG_OBJECT (self, "RTP RTCP UDP source has sock %" GST_PTR_FORMAT, rtcpfd);
 
   return rtcpfd;
 }
