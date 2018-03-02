@@ -101,12 +101,20 @@ G_DEFINE_TYPE_WITH_CODE (GstRtpSrc, gst_rtp_src, GST_TYPE_BIN,
     G_IMPLEMENT_INTERFACE (GST_TYPE_URI_HANDLER, gst_rtp_src_uri_handler_init));
 
 static GstCaps *gst_rtp_src_request_pt_map_cb (GstElement * sess, guint sess_id,
-    guint pt, GstRtpSrc * self);
+    guint pt, gpointer data);
 static GstStateChangeReturn gst_rtp_src_change_state (GstElement * element,
     GstStateChange transition);
 static gboolean gst_rtp_src_is_multicast (const gchar * ip_addr);
 static GSocket *gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self);
 
+/**
+ * gst_rtp_src_retrieve_rtcpsrc_socket:
+ * @self: The current #GstRtpSrc object
+ *
+ * Simple wrapper to retrieve the RTCP socket from the configured UDP src.
+ *
+ * Returns: (transfer none): the udpsrc element used for RTCP
+ */
 static GSocket *
 gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
 {
@@ -123,6 +131,14 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
   return rtcpfd;
 }
 
+/**
+ * gst_rtp_src_rtpbin_pad_added_cb:
+ * @element: The #GstElement where the pad was added on
+ * @pad: The #GstPad that was added
+ * @data: gpointer to the current #GstRtpSrc object
+ *
+ * Callback when a pad has been added on the rtpbin
+ */
 static void
 gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
     GstPad * pad, gpointer data)
@@ -255,6 +271,13 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   gst_object_unref (pad);
 }
 
+/**
+ * gst_rtp_src_fixup_caps:
+ * @ret: The #GstCaps that needs fixup
+ * @encoding_name: encoding-name to base the fix up on.
+ *
+ * Modify the caps with extra information based on experience.
+ */
 static void
 gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
 {
@@ -335,10 +358,22 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
   }
 }
 
+/**
+ * gst_rtp_src_request_pt_map_cb:
+ * @sess: The #GstElement that threw the signal
+ * @sess_id: the session-id of the session
+ * @pt: the payload type
+ * @data: gpointer to the current #GstRtpSrc object
+ *
+ * Request the payload type as #GstCaps for pt in session.
+ *
+ * Returns: (transfer full): the #GstCaps matching the pt
+ */
 static GstCaps *
 gst_rtp_src_request_pt_map_cb (GstElement * sess, guint sess_id, guint pt,
-    GstRtpSrc * self)
+    gpointer data)
 {
+  GstRtpSrc *self = GST_RTP_SRC (data);
   const RtpParameters *p;
   GstCaps *ret = NULL;
   int i = 0;
@@ -423,6 +458,15 @@ full_caps_set:
   return ret;
 }
 
+/**
+ * gst_rtp_src_rtpbin_on_new_ssrc_cb:
+ * @object: The #GstElement that threw the signal
+ * @sess_id: the session-id of the session
+ * @ssrc: the ssrc of the new stream
+ * @user_data: gpointer to the current #GstRtpSrc object
+ *
+ * Callback thrown when a new SSRC was detected in an RTP session
+ */
 static void
 gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
     guint arg0,
@@ -434,6 +478,15 @@ gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
   GST_INFO_OBJECT(self, "Dectected a new SSRC: session 0x%x, ssrc 0x%x.", arg0, arg1);
 }
 
+/**
+ * gst_rtp_src_rtpbin_on_sssrc_collision_cb:
+ * @object: The #GstElement that threw the signal
+ * @sess_id: the session-id of the session
+ * @ssrc: the ssrc of the new stream
+ * @user_data: gpointer to the current #GstRtpSrc object
+ *
+ * Callback thrown when a collision is detected in an RTP session
+ */
 static void
 gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
     guint arg0,
@@ -445,6 +498,14 @@ gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
   GST_WARNING_OBJECT(self, "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", arg0, arg1);
 }
 
+/**
+ * gst_rtp_src_start:
+ * @self: The current #GstRtpSrc object
+ *
+ * Sets up the udpsrc and udpsink elements for RTP data and RTCP
+ *
+ * Returns: true or false
+ */
 static gboolean
 gst_rtp_src_start (GstRtpSrc * self)
 {
