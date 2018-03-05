@@ -81,6 +81,17 @@ G_DEFINE_TYPE_WITH_CODE (GstRtpSink, gst_rtp_sink, GST_TYPE_BIN,
 static gboolean gst_rtp_sink_is_multicast (const gchar * ip_addr);
 static GstPad* gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name);
 
+/**
+ * gst_rtp_sink_request_new_pad:
+ * @element: The current #GstRtpSink object
+ * @templ: the #GstPadTemplate used
+ * @name: the name the pad should use
+ * @caps: the #GstCaps the requested caps should use
+ *
+ * Function to fulfill the function of creating and returning a request pad
+ *
+ * Returns: (transfer full): the #GstGhostPad  created on the current element
+ */
 static GstPad *
 gst_rtp_sink_request_new_pad (GstElement * element,
     GstPadTemplate * templ, const gchar * name, const GstCaps * caps)
@@ -108,6 +119,13 @@ gst_rtp_sink_request_new_pad (GstElement * element,
   return ghost;
 }
 
+/**
+ * gst_rtp_sink_cleanup_send_chain:
+ * @self: The current #GstRtpSink object
+ * @sinkpad: the #GstPad
+ *
+ * Clean up when a pad is released
+ */
 static void
 gst_rtp_sink_cleanup_send_chain(GstElement *self, GstPad* sinkpad)
 {
@@ -123,6 +141,13 @@ gst_rtp_sink_cleanup_send_chain(GstElement *self, GstPad* sinkpad)
   gst_object_unref(parent);
 }
 
+/**
+ * gst_rtp_sink_release_pad:
+ * @element: The current #GstRtpSink object
+ * @pad: the #GstPad
+ *
+ * Function to release a pad
+ */
 static void
 gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
 {
@@ -155,6 +180,15 @@ gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
   GST_RTP_SINK_UNLOCK(self);
 }
 
+/**
+ * gst_rtp_sink_rtpbin_pad_added_cb:
+ * @element: the #GstRtpBin throwing the pad-added signal
+ * @pad: the #GstPad added
+ * @data: a gpointer to the current #GstRtpSink
+ *
+ * Link up the pad to the stored references of the #GstUdpSrc and
+ * #GstUdpSink elements that were created.
+ */
 static void
 gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
     GstPad * pad, gpointer data)
@@ -225,6 +259,14 @@ gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
   gst_caps_unref (caps);
 }
 
+/**
+ * gst_rtp_sink_rtpbin_pad_removed_cb:
+ * @element: The element where the pad is removed from (#GstRtpBin)
+ * @pad: the #GstPad being removed
+ * @data: gpointer to the current #GstRtpSink object
+ *
+ * Callback called when an element is removed on the rtpbin, clean up generated elements
+ */
 static void
 gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
     GstPad * pad, gpointer data)
@@ -272,9 +314,16 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
   if (parent) gst_object_unref(parent);
 }
 
-/* When a stream is sent on a socket, send out the information on the
+/**
+ * gst_rtp_sink_send_uri_info:
+ * @self: a reference to the current #GstRtpSink
+ * @pad: the #GstPad where to send the info on
+ * @uri: the uri string to be sent (URI)
+ *
+ * When a stream is sent on a socket, send out the information on the
  * relevant pad to let upper bins know what the combination of
- * Pad/Socket/Caps is */
+ * Pad/Socket/Caps is
+ */
 static void
 gst_rtp_sink_send_uri_info(GstRtpSink *self, const GstPad * pad, const gchar* uri)
 {
@@ -301,6 +350,14 @@ gst_rtp_sink_send_uri_info(GstRtpSink *self, const GstPad * pad, const gchar* ur
       gst_event_new_custom (GST_EVENT_CUSTOM_UPSTREAM, s2));
 }
 
+/**
+ * gst_rtp_sink_set_sdes:
+ * @rtpbin: the #GstRtpBin the session description should be set on
+ * @prop: the property that should be set in the SDES #GstStructure
+ * @val: the value that should be used in the SDES #GstStructure
+ *
+ * Adjust the SDES (Session Description) on the RTP Bin
+ */
 static void
 gst_rtp_sink_set_sdes (GstElement * rtpbin, const gchar * prop,
     const gchar * val)
@@ -316,6 +373,16 @@ gst_rtp_sink_set_sdes (GstElement * rtpbin, const gchar * prop,
   gst_structure_free (s);
 }
 
+/**
+ * gst_rtp_sink_rtp_bin_event:
+ * @pad: the #GstPad where the event was received on
+ * @parent: the parent #GstObject of the pad (i.e. #GstRtpBin)
+ * @event: the #GstEvent to be handled
+ *
+ * Event handling function for pads on the used RtpBin
+ *
+ * Returns: success value
+ */
 static gboolean
 gst_rtp_sink_rtp_bin_event (GstPad * pad, GstObject * parent, GstEvent * event)
 {
@@ -352,11 +419,19 @@ gst_rtp_sink_rtp_bin_event (GstPad * pad, GstObject * parent, GstEvent * event)
     g_object_set (G_OBJECT(new_element), property, value, NULL); \
   }
 
+/**
+ * gst_rtp_sink_rtpbin_element_added:
+ * @rtpbin: the #GstBin where the element was added in (#GstRtpBin)
+ * @new_element: the #GstElement that was added to the current bin
+ * @data: gpointer to the
+ *
+ * Set the rtcp-min-interval value if the property is supported.
+ */
 static void
-gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
+gst_rtp_sink_rtpbin_element_added (GstBin* rtpbin,
     GstElement * new_element, gpointer data)
 {
-  GST_DEBUG_OBJECT(self, "New element added %" GST_PTR_FORMAT, new_element);
+  GST_DEBUG_OBJECT(rtpbin, "New element added %" GST_PTR_FORMAT, new_element);
 
   g_return_if_fail (new_element != NULL);
 
@@ -364,11 +439,21 @@ gst_rtp_sink_rtpsink_element_added (GstRtpSink * self,
   gst_rtp_sink_find_property ("rtcp-min-interval", (guint64) 500000000);
 }
 
-/* In order for RTP to work by passing the data through the same bin;
+/**
+ * gst_rtp_sink_create_udp:
+ * @self: The current #GstRtpSink objecta
+ * @name: The name of the pad requested
+ *
+ * When a pad is requested, the proper udpsink and udpsrc elements are
+ * created on the same session.
+ *
+ * In order for RTP to work by passing the data through the same bin;
  * a number of udpsrc/udpsinks need to be created per media that is sent
  * out. While media can be fed through the same rtpbin in order to keep them
  * in the same session; each media sent should be sent on a different socket
  * (See RFC 3550).
+ *
+ * Returns: (transfer full): The created #GstGhostPad on the current element
  */
 static GstPad*
 gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
@@ -605,6 +690,14 @@ gst_rtp_sink_uri_handler_init (gpointer g_iface, gpointer iface_data)
   iface->set_uri = gst_rtp_sink_uri_set_uri;
 }
 
+/**
+ * gst_rtp_sink_is_multicast:
+ * @ip_addr: the IP address to check for multicast or not
+ *
+ * Function to test if the string representation an address is multicast
+ *
+ * Returns: True if multicast
+ */
 static gboolean
 gst_rtp_sink_is_multicast (const gchar * ip_addr)
 {
@@ -801,6 +894,13 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
       "barcortpsink", 0, "Barco rtp send bin");
 }
 
+/**
+ * gst_rtp_sink_init:
+ *
+ * @self: the current #GstRtpSink
+ *
+ * initialise the GstRtpBin
+ */
 static void
 gst_rtp_sink_init (GstRtpSink * self)
 {
