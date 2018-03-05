@@ -1,3 +1,18 @@
+gst-plugins-barcortp (1.12.3~barco9+5) stretch-barco-testing; urgency=medium
+
+  * rtpsrc: document core functions
+  * rtpsrc: use GST_PTR_FORMAT
+  * rtpsrc: improve callback naming
+  * rtpsrc: improve logging
+  * rtpsrc: remove unused debug code
+  * rtpsink: minor syntax changes
+  * rtpsink: add documentation headers
+  * rtpsink: rename var to avoid shadowing
+  * rtpsink: adjust for function rename
+  * rtpsink simplify
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 05 Mar 2018 13:02:20 +0100
+
 gst-plugins-barcortp (1.12.3~barco9+4) stretch-barco-testing; urgency=medium
 
   * rtpsink: only unref if there are caps
