@@ -399,6 +399,8 @@ gst_rtp_sink_rtp_bin_event (GstPad * pad, GstObject * parent, GstEvent * event)
       if (gst_structure_has_name (s, "GstTouringNewSource")) {
         const gchar *uri = gst_structure_get_string (s, "uri");
 
+        GST_INFO("Received update that input switched to \"%s\".", uri);
+
         gst_rtp_sink_set_sdes (rtpbin, "note", uri);
       }
 
