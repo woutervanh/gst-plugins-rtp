@@ -30,7 +30,6 @@ struct _GstRtpSink
   gint npads;
   gchar *last_uri;
 
-
   guint cidr;
   gint ttl;
   gint ttl_mc;
@@ -428,7 +427,8 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "ttl-mc", self->ttl_mc,
       "host", gst_uri_get_host(uri),
       "port", gst_uri_get_port(uri),
-      "auto-multicast", TRUE, NULL);
+      "auto-multicast", TRUE,
+      NULL);
 
   /* auto-multicast should be set to false as rtcp_src will already
    * join the multicast group */
@@ -439,7 +439,9 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "ttl-mc", self->ttl_mc,
       "host", gst_uri_get_host(uri),
       "port", gst_uri_get_port(uri) + 1,
-      "close-socket", FALSE, "auto-multicast", FALSE, NULL);
+      "close-socket", FALSE,
+      "auto-multicast", FALSE,
+      NULL);
 
   GST_DEBUG_OBJECT(self, "Configuring the RTCP source element.");
   if (gst_rtp_sink_is_multicast (gst_uri_get_host(uri))) {
@@ -553,7 +555,7 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
 
     return ghost;
   }
-  /* Bad */
+  /* Bad, cannot happen */
   return NULL;
 }
 
