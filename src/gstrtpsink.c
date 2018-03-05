@@ -550,14 +550,14 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     /* Link the UDP sources and sinks to the RTP bin element. This should
        be done for each stream that is added while only using one single
        rtpbin element. */
-    gchar *name;
+    gchar *lname = g_strdup_printf ("send_rtp_sink_%d", self->npads);
+
     GST_DEBUG_OBJECT (self, "Connecting pads");
 
     /* Get the RTP (data) pad on the rtpbin to reuse later on, this pad
      * will be ghosted to the rtpsink bin to allow feeding in data. */
-    name = g_strdup_printf ("send_rtp_sink_%d", self->npads);
-    pad = gst_element_get_request_pad (self->rtpbin, name);
-    g_free(name);
+    pad = gst_element_get_request_pad (self->rtpbin, lname);
+    g_free(lname);
 
     /* This is very bad, there is a mixup with the pads */
     g_return_val_if_fail ( pad != NULL, NULL);
@@ -566,10 +566,10 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
      *
      * It looks as if that this link can only be used when a pad is
      * spawned; the link up will be a bit later as a result. */
-    name = g_strdup_printf ("send_rtp_src_%d", self->npads);
-    if (!gst_element_link_pads (self->rtpbin, name, rtp_sink, "sink"))
-      GST_ERROR_OBJECT(self, "Problem linking up outgoing RTP data (%s).", name);
-    g_free(name);
+    lname = g_strdup_printf ("send_rtp_src_%d", self->npads);
+    if (!gst_element_link_pads (self->rtpbin, lname, rtp_sink, "sink"))
+      GST_ERROR_OBJECT(self, "Problem linking up outgoing RTP data (%s).", lname);
+    g_free(lname);
 
     {
       gchar* suri = gst_uri_to_string(uri);
@@ -578,16 +578,16 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     }
 
     /* Link up the RTCP control data pad to the udpsink to send on. */
-    name = g_strdup_printf ("send_rtcp_src_%d", self->npads);
-    if (!gst_element_link_pads (self->rtpbin, name, rtcp_sink, "sink"))
-      GST_ERROR_OBJECT(self, "Problem linking up outgoing RTCP data (%s).", name);
-    g_free(name);
+    lname = g_strdup_printf ("send_rtcp_src_%d", self->npads);
+    if (!gst_element_link_pads (self->rtpbin, lname, rtcp_sink, "sink"))
+      GST_ERROR_OBJECT(self, "Problem linking up outgoing RTCP data (%s).", lname);
+    g_free(lname);
 
     /* Link up the udpsrc incoming RTCP data to the RTCP control sink bin */
-    name = g_strdup_printf ("recv_rtcp_sink_%d", self->npads);
-    if (!gst_element_link_pads (rtcp_src, "src", self->rtpbin, name))
-      GST_ERROR_OBJECT(self, "Problem linking up incoming RTCP data (%s).", name);
-    g_free(name);
+    lname = g_strdup_printf ("recv_rtcp_sink_%d", self->npads);
+    if (!gst_element_link_pads (rtcp_src, "src", self->rtpbin, lname))
+      GST_ERROR_OBJECT(self, "Problem linking up incoming RTCP data (%s).", lname);
+    g_free(lname);
   }
 
   gst_pad_set_event_function (pad,
