@@ -933,7 +933,7 @@ gst_rtp_sink_init (GstRtpSink * self)
     g_signal_connect (self->rtpbin, "pad-removed",
         G_CALLBACK (gst_rtp_sink_rtpbin_pad_removed_cb), self);
     g_signal_connect (self->rtpbin, "element-added",
-        G_CALLBACK (gst_rtp_sink_rtpsink_element_added), NULL);
+        G_CALLBACK (gst_rtp_sink_rtpbin_element_added), self);
 
     gst_bin_add_many (GST_BIN (self), self->rtpbin, NULL);
 
