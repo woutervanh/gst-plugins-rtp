@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.3~barco9+6) stretch-barco-testing; urgency=medium
+
+  * rtpsink: log input change event
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 05 Mar 2018 13:44:04 +0100
+
 gst-plugins-barcortp (1.12.3~barco9+5) stretch-barco-testing; urgency=medium
 
   * rtpsrc: document core functions
