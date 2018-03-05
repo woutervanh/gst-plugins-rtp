@@ -413,11 +413,6 @@ gst_rtp_sink_rtp_bin_event (GstPad * pad, GstObject * parent, GstEvent * event)
   return ret;
 }
 
-#define gst_rtp_sink_find_property(property, value) \
-  if (g_object_class_find_property (G_OBJECT_GET_CLASS (new_element), property)){ \
-    GST_DEBUG_OBJECT(self, "element supports " property); \
-    g_object_set (G_OBJECT(new_element), property, value, NULL); \
-  }
 
 /**
  * gst_rtp_sink_rtpbin_element_added:
@@ -436,7 +431,9 @@ gst_rtp_sink_rtpbin_element_added (GstBin* rtpbin,
   g_return_if_fail (new_element != NULL);
 
   /* set minimal interval on 0.5s */
-  gst_rtp_sink_find_property ("rtcp-min-interval", (guint64) 500000000);
+  if (g_object_class_find_property (G_OBJECT_GET_CLASS (new_element), "rtcp-min-interval")){ \
+    g_object_set (G_OBJECT(new_element), "rtcp-min-interval", (guint64)500000000, NULL); \
+  }
 }
 
 /**
