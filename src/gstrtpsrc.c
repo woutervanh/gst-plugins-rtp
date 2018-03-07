@@ -602,6 +602,7 @@ gst_rtp_src_start (GstRtpSrc * self)
   g_object_set (G_OBJECT (self->rtpbin),
       "do-lost", TRUE,
       "autoremove", TRUE,
+      "rtp-profile", 2, /* GST_RTP_PROFILE_AVPF */
       "ignore-pt", self->pt_change, "latency", self->latency, NULL);
 
   /* Add elements to the bin and link them */
