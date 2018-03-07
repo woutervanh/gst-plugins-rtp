@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.3~barco9+7) stretch-barco-testing; urgency=medium
+
+  * rtpsrc: set rtp-rpfile to AVPF (Audio Video Profile with Feedback)
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 07 Mar 2018 13:51:21 +0100
+
 gst-plugins-barcortp (1.12.3~barco9+6) stretch-barco-testing; urgency=medium
 
   * rtpsink: log input change event
