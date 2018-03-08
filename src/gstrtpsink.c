@@ -60,7 +60,6 @@ enum
 #define DEFAULT_PROP_TTL_MC           (8)
 #define DEFAULT_SRC_PORT              (0)
 
-/*Investigate "application/x-rtp, rtcp-fb-ccm-fir=(boolean)true"*/
 static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink_%u",
     GST_PAD_SINK,
     GST_PAD_REQUEST,
