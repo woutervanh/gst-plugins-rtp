@@ -603,7 +603,9 @@ gst_rtp_src_start (GstRtpSrc * self)
       "do-lost", TRUE,
       "autoremove", TRUE,
       "rtp-profile", 2, /* GST_RTP_PROFILE_AVPF */
-      "ignore-pt", self->pt_change, "latency", self->latency, NULL);
+      "ignore-pt", self->pt_change,
+      "latency", self->latency,
+      NULL);
 
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (self), self->rtp_src, self->rtpbin, NULL);
