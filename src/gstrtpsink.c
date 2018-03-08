@@ -933,6 +933,10 @@ gst_rtp_sink_init (GstRtpSink * self)
     g_signal_connect (self->rtpbin, "element-added",
         G_CALLBACK (gst_rtp_sink_rtpbin_element_added), self);
 
+    g_object_set (G_OBJECT (self->rtpbin),
+        "rtp-profile", 2, /* GST_RTP_PROFILE_AVPF */
+        NULL);
+
     gst_bin_add_many (GST_BIN (self), self->rtpbin, NULL);
 
     gst_element_sync_state_with_parent (GST_ELEMENT (self->rtpbin));
