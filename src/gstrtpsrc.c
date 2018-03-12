@@ -449,7 +449,16 @@ beach:
       "media", G_TYPE_STRING, p->media,
       "clock-rate", G_TYPE_INT, p->clock_rate,
       "encoding-name", G_TYPE_STRING, p->encoding_name,
-      "payload", G_TYPE_INT, (p->pt) ? p->pt : pt, NULL);
+      "payload", G_TYPE_INT, (p->pt) ? p->pt : pt,
+      /* No harm in asking
+       *
+       * rtcp-fb-ccm-fir: Request keyframes over RTCP
+       * rtcp-fb-nack: Do not know
+       * rtcp-fb-nack-pli: Packet loss indication, can serve to request
+       *     a new I-Frame
+       * */
+      "rtcp-fb-ccm-fir", G_TYPE_BOOLEAN, TRUE,
+      NULL);
 
   gst_rtp_src_fixup_caps (ret, p->encoding_name);
   GST_DEBUG_OBJECT (self, "Decided on caps %" GST_PTR_FORMAT, ret);
