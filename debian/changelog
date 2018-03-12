@@ -1,3 +1,10 @@
+gst-plugins-barcortp (1.12.3~barco9+9) stretch-barco-testing; urgency=medium
+
+  * Create README.md
+  * rtpsrc: ask for FIR by setting caps
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 12 Mar 2018 12:42:54 +0100
+
 gst-plugins-barcortp (1.12.3~barco9+8) stretch-barco-testing; urgency=medium
 
   * rtpsink: remove old comment
