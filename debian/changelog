@@ -1,3 +1,9 @@
+gst-plugins-barcortp (1.12.4~barco9+1) stretch-barco-testing; urgency=medium
+
+  * Rebuild to sync with build numbers
+
+ -- Marc Leeman <marc.leeman@barco.com>  Wed, 14 Mar 2018 11:01:24 +0100
+
 gst-plugins-barcortp (1.12.3~barco9+9) stretch-barco-testing; urgency=medium
 
   * Create README.md
