@@ -32,7 +32,7 @@ struct _GstRtpSrc
   guint64 timeout;
 
   gboolean enable_rtcp;
-  guint16 rtcp_ttl_mc;
+  guint16 ttl_mc;
 
   GstElement *rtp_src;
   GstElement *rtcp_src;
@@ -61,7 +61,7 @@ enum
   PROP_SSRC_SELECT,
   PROP_TIMEOUT,
   PROP_URI,
-  PROP_RTCP_TTL_MC,
+  PROP_TTL_MC,
   PROP_LAST
 };
 
@@ -73,7 +73,7 @@ enum
 #define DEFAULT_ENABLE_RTCP           (TRUE)
 #define DEFAULT_PROP_MULTICAST_IFACE  (NULL)
 #define DEFAULT_PROP_TIMEOUT          (0)
-#define DEFAULT_PROP_RTCP_TTL_MC      (1)
+#define DEFAULT_PROP_TTL_MC           (1)
 
 /* 0 size means just pass the buffer along */
 #define GST_RTPPTCHANGE_DEFAULT_PT_NUMBER (0)
@@ -706,7 +706,7 @@ gst_rtp_src_start (GstRtpSrc * self)
     g_return_val_if_fail (rtcpfd != NULL, FALSE);
     g_object_set (G_OBJECT (self->rtcp_sink),
         "socket", rtcpfd,
-        "ttl-mc", self->rtcp_ttl_mc,
+        "ttl-mc", self->ttl_mc,
         NULL);
 
     ret = gst_element_set_state (self->rtcp_sink, GST_STATE_READY);
@@ -961,8 +961,8 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         gst_caps_unref (old_caps);
       break;
     }
-    case PROP_RTCP_TTL_MC:
-      self->rtcp_ttl_mc = g_value_get_uint (value);
+    case PROP_TTL_MC:
+      self->ttl_mc = g_value_get_uint (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -1016,8 +1016,8 @@ gst_rtp_src_get_property (GObject * object, guint prop_id,
     case PROP_CAPS:
       gst_value_set_caps (value, self->caps);
       break;
-    case PROP_RTCP_TTL_MC:
-      g_value_set_uint (value, self->rtcp_ttl_mc);
+    case PROP_TTL_MC:
+      g_value_set_uint (value, self->ttl_mc);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -1200,7 +1200,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
-   * GstRtpSrc::rtcp-ttl-mc
+   * GstRtpSrc::ttl-mc
    *
    * This parameter applies to incoming multicast traffic only.
    *
@@ -1215,13 +1215,13 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
    * Since: ??
    */
   g_object_class_install_property (oclass,
-      PROP_RTCP_TTL_MC,
-      g_param_spec_uint ("rtcp-ttl-mc",
+      PROP_TTL_MC,
+      g_param_spec_uint ("ttl-mc",
           "Time-to-live for multicast RTCP Receiver Reports",
           "Time-to-live for multicast RTCP Receiver Reports",
-          DEFAULT_PROP_RTCP_TTL_MC,
+          DEFAULT_PROP_TTL_MC,
           64,
-          DEFAULT_PROP_RTCP_TTL_MC, G_PARAM_READWRITE));
+          DEFAULT_PROP_TTL_MC, G_PARAM_READWRITE));
 
 
   gst_element_class_add_pad_template (gstelement_class,
@@ -1238,7 +1238,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
       "Paul Henrys <paul.henrys'daubigny@barco.com>");
 
   GST_DEBUG_CATEGORY_INIT (rtp_src_debug,
-      "barcortpsrc", 0, "Barco rtp send bin");
+      "barcortpsrc", 0, "Barco RTP receive bin");
 }
 
 static void
@@ -1259,7 +1259,7 @@ gst_rtp_src_init (GstRtpSrc * self)
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
   self->ssrc_select = GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT;
   self->caps = NULL;
-  self->rtcp_ttl_mc = DEFAULT_PROP_RTCP_TTL_MC;
+  self->ttl_mc = DEFAULT_PROP_TTL_MC;
 
   self->rtpheaderchange = NULL;
 
