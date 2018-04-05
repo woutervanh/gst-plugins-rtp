@@ -1,5 +1,5 @@
 set (C_FILES
-  "gst-plugins-barcortp.c"
+  "barcortp.c"
   "gstbarcomgs_common.c"
   "gstrtpsink.c"
   "gstrtpsrc.c"
@@ -15,9 +15,9 @@ include_directories (
   ${GSTPBUTILS_INCLUDE_DIRS}
 )
 
-add_library (gst-plugins-barcortp SHARED ${C_FILES})
+add_library (gstbarcortp SHARED ${C_FILES})
 
-target_link_libraries (gst-plugins-barcortp
+target_link_libraries (gstbarcortp
   ${GST_LIBRARIES}
   ${GIO_LIBRARIES}
   ${GSTBASE_LIBRARIES}
@@ -29,7 +29,7 @@ target_link_libraries (gst-plugins-barcortp
 )
 
 if (WIN32)
-    target_link_libraries (gst-plugins-barcortp
+    target_link_libraries (gstbarcortp
         ws2_32
     )
 endif (WIN32)
@@ -39,15 +39,15 @@ endif (WIN32)
 # the normal location.
 SET(CMAKE_UNDER_JHBUILD $ENV{UNDER_JHBUILD})
 if(CMAKE_UNDER_JHBUILD)
-  MESSAGE(STATUS "Installing libgst-plugins-barcortp.so non-multiarchi (JHBUILD)")
+  MESSAGE(STATUS "Installing libgstbarcortp.so non-multiarchi (JHBUILD)")
   install (
-    TARGETS gst-plugins-barcortp
+    TARGETS gstbarcortp
     DESTINATION lib/gstreamer-1.0
   )
 else (CMAKE_UNDER_JHBUILD)
-  MESSAGE(STATUS "Installing libgst-plugins-barcortp.so multiarch (DEBIAN)")
+  MESSAGE(STATUS "Installing libgstbarcortp.so multiarch (DEBIAN)")
   install (
-    TARGETS gst-plugins-barcortp
+    TARGETS gstbarcortp
     DESTINATION lib/${CMAKE_ARCH_TRIPLET}/gstreamer-1.0
   )
 endif (CMAKE_UNDER_JHBUILD)
