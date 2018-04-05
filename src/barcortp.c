@@ -17,24 +17,23 @@
 
 /* top level library code; initialise the plugins part of this library */
 
-/** 
+/**
  * @brief Initialise the barco library
- * 
+ *
  * @param plugin: plugin to initialise
- * 
+ *
  * @return TRUE if all plugins were initialised properly
  */
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
 
-  if (!rtp_sink_init (plugin))
-    return FALSE;
+  gboolean ret;
 
-  if (!rtp_src_init (plugin))
-    return FALSE;
+  ret = rtp_sink_init (plugin);
+  ret &= rtp_src_init (plugin);
 
-  return TRUE;
+  return ret;
 }
 
 #ifndef VERSION
