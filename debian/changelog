@@ -1,3 +1,13 @@
+gst-plugins-barcortp (1.14.0~barco9+1) stretch-barco-testing; urgency=medium
+
+  * rebuild with GStreamer 1.14.0
+  * rtpsrc/rtpsink: harmnnnise on ttl-mc for TTL on RTP/RTCP
+  * barcortp: use new naming scheme from 1.14
+  * barcortp: improve init
+  * rtpsink: include gstconfig for GstUri
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 05 Apr 2018 10:27:09 -0400
+
 gst-plugins-barcortp (1.12.4~barco9+2) stretch-barco-testing; urgency=medium
 
   [ Niels De Graef ]
