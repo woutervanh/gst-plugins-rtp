@@ -10,6 +10,8 @@
 #include <config.h>
 #endif
 
+#include <gst/gstconfig.h>
+
 #include <gst/gsturi.h>
 #include <gio/gio.h>
 #include <netinet/in.h>
@@ -345,7 +347,7 @@ gst_rtp_sink_send_uri_info(GstRtpSink *self, const GstPad * pad, const gchar* ur
       gst_message_new_element (GST_OBJECT_CAST (self), s1)
       );
 
-  gst_pad_push_event(pad,
+  gst_pad_push_event(GST_PAD(pad),
       gst_event_new_custom (GST_EVENT_CUSTOM_UPSTREAM, s2));
 }
 
