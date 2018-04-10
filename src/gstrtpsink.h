@@ -2,7 +2,6 @@
 #define _GST_RTP_SINK_H_
 
 #include <gst/gst.h>
-#include <gst/gsturi.h>
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
