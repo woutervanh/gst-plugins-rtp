@@ -10,8 +10,6 @@
 #include <config.h>
 #endif
 
-#include <gst/gsturi.h>
-#include <gio/gio.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
