@@ -463,21 +463,23 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   GstUri *uri = gst_uri_copy(self->uri);
   guint v=0;
   GstPad *pad;
+  const gchar* host = NULL;
 
   GST_DEBUG_OBJECT(self, "Hooking up UDP elements.");
 
   g_return_val_if_fail(self->uri, NULL);
 
-  /* Adjust the URI to match with the CIDR notation */
-  if (gst_barco_is_ipv4(uri)){
-    guint u[4];
-    const gchar* host = gst_uri_get_host(uri);
-    if( host == NULL){
-      GST_ERROR_OBJECT(self, "Could not get a valid host.");
-      return NULL;
-    }
+  host = gst_uri_get_host(uri);
+  if( host == NULL) {
+    GST_ERROR_OBJECT(self, "Could not get a valid host.");
+    return NULL;
+  }
 
-    if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4){
+  /* Adjust the URI to match with the CIDR notation */
+  if (gst_barco_is_ipv4(uri)) {
+    guint u[4];
+
+    if (sscanf(host, "%d.%d.%d.%d", &u[0], &u[1], &u[2], &u[3]) == 4) {
       gchar *nhost;
 
       GST_DEBUG_OBJECT(self, "Scanned %d.%d.%d.%d", u[0], u[1], u[2], u[3]);
@@ -510,7 +512,7 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "async", FALSE,
       "ttl", self->ttl,
       "ttl-mc", self->ttl_mc,
-      "host", gst_uri_get_host(uri),
+      "host", host,
       "port", gst_uri_get_port(uri),
       "auto-multicast", TRUE,
       NULL);
@@ -522,16 +524,16 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "async", FALSE,
       "ttl", self->ttl,
       "ttl-mc", self->ttl_mc,
-      "host", gst_uri_get_host(uri),
+      "host", host,
       "port", gst_uri_get_port(uri) + 1,
       "close-socket", FALSE,
       "auto-multicast", FALSE,
       NULL);
 
   GST_DEBUG_OBJECT(self, "Configuring the RTCP source element.");
-  if (gst_rtp_sink_is_multicast (gst_uri_get_host(uri))) {
+  if (gst_rtp_sink_is_multicast (host)) {
     g_object_set (G_OBJECT (rtcp_src),
-        "address", gst_uri_get_host(uri),
+        "address", host,
         "port", gst_uri_get_port(uri) + 1,
         NULL);
   } else {

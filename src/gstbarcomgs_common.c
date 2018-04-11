@@ -24,19 +24,24 @@
 gboolean
 gst_barco_is_ipv4 (GstUri* uri)
 {
-  gboolean res = TRUE;
+  gboolean res = FALSE;
+  const gchar* host = NULL;
 
-  g_return_val_if_fail(uri != NULL, FALSE);
+  g_return_val_if_fail (uri != NULL, FALSE);
 
-  if (gst_uri_get_host(uri) && *(gst_uri_get_host(uri)) != '\0') {
-    GInetAddress *addr = g_inet_address_new_from_string (gst_uri_get_host(uri));
-    if (g_inet_address_get_family (addr) == G_SOCKET_FAMILY_IPV4) {
-      /*g_print ("IPv4 based on %s\n", gst_uri_get_host(uri));*/
-    } else {
-      /*g_print ("No IPv4 based on %s\n", gst_uri_get_host(uri));*/
-      res = FALSE;
+  host = gst_uri_get_host (uri);
+
+  if (host && *host != '\0') {
+    GInetAddress* const addr = g_inet_address_new_from_string (host);
+    if (addr) {
+      if (g_inet_address_get_family (addr) == G_SOCKET_FAMILY_IPV4) {
+        res = TRUE;
+        /*g_print ("IPv4 based on %s\n", host);*/
+      } else {
+        /*g_print ("No IPv4 based on %s\n", host);*/
+      }
+      g_object_unref (addr);
     }
-    g_object_unref (addr);
   }
 
   return res;
