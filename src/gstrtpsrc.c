@@ -3,7 +3,7 @@
 #include <config.h>
 #endif
 
-#include <gst/net/gstnetaddressmeta.h>
+#include <gst/net/gstnet.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
