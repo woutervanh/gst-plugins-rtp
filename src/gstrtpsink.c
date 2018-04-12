@@ -139,7 +139,7 @@ gst_rtp_sink_cleanup_send_chain(GstElement *self, GstPad* sinkpad)
 
   g_return_if_fail(sinkpad != NULL);
 
-  parent = gst_pad_get_parent(sinkpad);
+  parent = GST_ELEMENT(gst_pad_get_parent(sinkpad));
   GST_DEBUG_OBJECT(self, "Cleaning up element %" GST_PTR_FORMAT, parent);
 
   gst_element_release_request_pad (parent, sinkpad);
