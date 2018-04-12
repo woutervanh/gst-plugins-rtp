@@ -1,3 +1,21 @@
+gst-plugins-barcortp (1.14.0~barco9+3) stretch-barco-testing; urgency=medium
+
+  [ Niels De Graef ]
+  * RtspSrc: don't include private header.
+  * RtpSrc: don't include private GStreamer headers.
+  * RtpSink: don't include private GStreamer headers.
+
+  [ Bini, Sébastien ]
+  * Merge pull request #4 in EMS/gst-plugins-barcortp from feature/rtp_sink_localhost_segfault to master
+
+  [ Marc Leeman ]
+  * cmake: remove soup
+  * rtp: link uri handing if not in core
+  * rtpsink: silence compiler warning by adding cast
+  * README.md: add note about encoding-name
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 12 Apr 2018 09:48:01 +0200
+
 gst-plugins-barcortp (1.14.0~barco9+2) stretch-barco-testing; urgency=medium
 
   * barcortp: improve description
