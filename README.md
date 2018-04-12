@@ -11,7 +11,9 @@ $ gst-launch-1.0 videotestsrc horizontal-speed=1 ! videoconvert ! x264enc ! rtph
 $ gst-launch-1.0 rtpsrc uri=rtp://239.1.2.3:1234?encoding-name=H264 ! decodebin ! videoconvert ! autovideosink
 ```
 
-The 'encoding-name' is used to hint for the correct caps.
+The 'encoding-name' is used to hint for the correct caps and
+they typically map on the encoding-name used in the caps of the
+(de)payloaders. See src/gstrtpparameters.h for the detailed definition.
 
 The modules do depend on
 'gst_object_set_properties_from_uri_query_parameters'; see
