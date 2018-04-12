@@ -21,6 +21,11 @@
 #include "gstrtpsink.h"
 #include "gstbarcomgs_common.h"
 
+/* See:  https://bugzilla.gnome.org/show_bug.cgi?id=779765 */
+#ifndef HAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS
+#include "gst_object_set_properties_from_uri_query_parameters.h"
+#endif
+
 GST_DEBUG_CATEGORY_STATIC (rtp_sink_debug);
 #define GST_CAT_DEFAULT rtp_sink_debug
 

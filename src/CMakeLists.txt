@@ -15,6 +15,13 @@ include_directories (
   ${GSTPBUTILS_INCLUDE_DIRS}
 )
 
+if (NOT HAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS)
+    MESSAGE(STATUS "gst_object_set_properties_from_uri_query_parameters not in GStreamer core.")
+    list (APPEND C_FILES
+            "gst_object_set_properties_from_uri_query_parameters.c"
+    )
+endif(NOT HAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS)
+
 add_library (gstbarcortp SHARED ${C_FILES})
 
 target_link_libraries (gstbarcortp
