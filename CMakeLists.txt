@@ -37,7 +37,6 @@ endif(WIN32)
 
 pkg_check_modules (GST REQUIRED gstreamer-1.0)
 pkg_check_modules (GSTBASE REQUIRED gstreamer-base-1.0)
-#pkg_check_modules (SOUP REQUIRED libsoup-2.4)
 
 if (NOT WIN32)
 add_definitions (${CFLAGS} "-fPIC")
