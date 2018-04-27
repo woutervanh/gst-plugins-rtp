@@ -502,14 +502,8 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   }
 
   rtp_sink = gst_element_factory_make ("udpsink", NULL);
-  rtcp_sink = gst_element_factory_make ("udpsink", NULL);
-  rtcp_src = gst_element_factory_make ("udpsrc", NULL);
-
   g_return_val_if_fail (rtp_sink != NULL, NULL);
-  g_return_val_if_fail (rtcp_sink != NULL, NULL);
-  g_return_val_if_fail (rtcp_src != NULL, NULL);
-
-  gst_bin_add_many (GST_BIN (self), rtp_sink, rtcp_sink, rtcp_src, NULL);
+  gst_bin_add_many (GST_BIN (self), rtp_sink, NULL);
 
   /* Set properties */
   GST_DEBUG_OBJECT(self, "Configuring the RTP/RTCP sink elements.");
@@ -521,6 +515,10 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "port", gst_uri_get_port(uri),
       "auto-multicast", TRUE,
       NULL);
+
+  rtcp_sink = gst_element_factory_make ("udpsink", NULL);
+  g_return_val_if_fail (rtcp_sink != NULL, NULL);
+  gst_bin_add_many (GST_BIN (self), rtcp_sink, NULL);
 
   /* auto-multicast should be set to false as rtcp_src will already
    * join the multicast group */
@@ -534,6 +532,10 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
       "close-socket", FALSE,
       "auto-multicast", FALSE,
       NULL);
+
+  rtcp_src = gst_element_factory_make ("udpsrc", NULL);
+  g_return_val_if_fail (rtcp_src != NULL, NULL);
+  gst_bin_add_many (GST_BIN (self), rtcp_src, NULL);
 
   GST_DEBUG_OBJECT(self, "Configuring the RTCP source element.");
   if (gst_rtp_sink_is_multicast (host)) {
