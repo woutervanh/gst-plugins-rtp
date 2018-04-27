@@ -602,13 +602,17 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
   gst_pad_set_event_function (pad,
       (GstPadEventFunction) gst_rtp_sink_rtp_bin_event);
 
-  if(!gst_element_sync_state_with_parent (rtp_sink))
+  if(!gst_element_sync_state_with_parent (rtp_sink)){
     GST_ERROR_OBJECT (self, "Could not set RTP sink to playing.");
+    goto sync_element_failure;
+  }
 
   /* First we update the state of rtcp_src so that it creates a socket and
    * binds on the port gst_uri_get_port(self->uri) + 1 */
-  if (!gst_element_sync_state_with_parent (rtcp_src))
+  if (!gst_element_sync_state_with_parent (rtcp_src)){
     GST_ERROR_OBJECT (self, "Could not set RTCP source to playing");
+    goto sync_element_failure;
+  }
 
   /* Now we can retrieve rtcp_src socket and set it for rtcp_sink element */
   {
@@ -621,8 +625,10 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
         NULL);
   }
   /* And we sync the state of rtcp_sink */
-  if (!gst_element_sync_state_with_parent (rtcp_sink))
+  if (!gst_element_sync_state_with_parent (rtcp_sink)){
     GST_ERROR_OBJECT (self, "Could not set RTCP sink to playing");
+    goto sync_element_failure;
+  }
 
   g_object_set_data (G_OBJECT (pad), "rtpsink.rtp_sink", rtp_sink);
   g_object_set_data (G_OBJECT (pad), "rtpsink.rtcp_sink", rtcp_sink);
@@ -650,6 +656,21 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
     return ghost;
   }
   /* Bad, cannot happen */
+  return NULL;
+
+sync_element_failure:
+  gst_element_set_locked_state (rtcp_src, TRUE);
+  gst_element_set_state (rtcp_src, GST_STATE_NULL);
+  gst_bin_remove_many (GST_BIN_CAST (self), rtcp_src, NULL);
+
+  gst_element_set_locked_state (rtcp_sink, TRUE);
+  gst_element_set_state (rtcp_sink, GST_STATE_NULL);
+  gst_bin_remove_many (GST_BIN_CAST (self), rtcp_sink, NULL);
+
+  gst_element_set_locked_state (rtp_sink, TRUE);
+  gst_element_set_state (rtp_sink, GST_STATE_NULL);
+  gst_bin_remove_many (GST_BIN_CAST (self), rtp_sink, NULL);
+
   return NULL;
 }
 
