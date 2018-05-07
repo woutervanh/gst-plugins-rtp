@@ -284,6 +284,7 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
 
   GST_INFO_OBJECT(self, "Pad %" GST_PTR_FORMAT " was removed on %" GST_PTR_FORMAT, pad, element);
 
+  if (pad == NULL) return;
   peer = gst_pad_get_peer(pad);
   if (peer) gst_pad_get_parent(peer);
 
