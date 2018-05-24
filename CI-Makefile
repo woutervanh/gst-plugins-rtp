@@ -1,0 +1,50 @@
+export DOCKER_NAME=gstreamer1.0-plugins-barcortp
+export DEV_TEAM=ems
+export DEBIAN_TAG_PREFIX=debian/
+export RELEASE_BRANCHES=^(debian/.*)$$
+
+SHELL := /bin/bash
+.PHONY: env clean build package prepare iso ova lintian test release
+all:build
+
+prepare:
+		@echo "MAKE prepare ==========================================="
+
+env:
+	@echo "MAKE env ==========================================="
+	build-scripts/show-env.sh
+
+package:
+	@echo "MAKE package ==================================================="
+	build-scripts/debian-package/build-debian-package.sh
+
+publish:
+	@echo "MAKE publish ==========================================="
+	build-scripts/debian-package/upload-debian-package.sh
+
+release:
+	@echo "MAKE publish ==========================================="
+	build-scripts/debian-package/release-debian.sh $(NEW_RELEASE_VERSION)
+
+iso:
+	@echo "MAKE iso ==========================================="
+	build-scripts/debian-package/build-iso-image.sh
+
+test:
+	@echo "MAKE docker ==========================================="
+	build-scripts/test.sh
+
+lintian:
+	build-scripts/debian-package/lintian-check-debian-package.sh
+
+ova:
+	@echo "MAKE ova ==========================================="
+	build-scripts/debian-package/build-ova-image.sh
+
+insert:
+	@echo "MAKE insert ==========================================="
+	build-scripts/debian-package/insert_package_in_distro.sh
+
+run:
+	@echo "MAKE Run ==========================================="
+	build-scripts/debian-package/run-docker-image.sh
