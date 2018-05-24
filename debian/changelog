@@ -1,3 +1,14 @@
+gst-plugins-barcortp (1.14.0~barco9+4) stretch-barco-testing; urgency=medium
+
+  * README: update to reflect the status
+  * rtpsink: create udp elements and configure
+  * rtpsink: do not return pad when not all UDP elements are sync'd
+  * rtpsink: do not clean up when the pad is already NULL
+  * copy in CI file
+  * define -DHAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 24 May 2018 17:39:37 +0200
+
 gst-plugins-barcortp (1.14.0~barco9+3) stretch-barco-testing; urgency=medium
 
   [ Niels De Graef ]
