@@ -57,8 +57,11 @@ MESSAGE(STATUS "Got version " ${GSTMGS_VERSION})
 
 add_definitions(-DDISABLE_DEPRECATED -DGST_USE_UNSTABLE_API)
 
-include (CheckFunctionExists)
-check_function_exists (gst_object_set_properties_from_uri_query_parameters,
-  HAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS)
+#FIXME: this check_function does not work properly, add it hardcoded.
+# include (CheckFunctionExists)
+# check_function_exists (gst_object_set_properties_from_uri_query_parameters
+#   HAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS)
+
+add_definitions (-DHAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS)
 
 CONFIGURE_FILE(config.h.cmake config.h)
