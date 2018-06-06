@@ -7,3 +7,4 @@ debian/gstreamer1.0-plugins-barcortp/
 debian/stamp-*
 obj-x86_64-linux-gnu/
 
+results/
