@@ -10,6 +10,7 @@ source /test/testsuites/TESTS/config.sh
 
 
 @test rtpsrc {
+  skip
     run ${LAUNCHER}  videotestsrc horizontal-speed=1 num-buffers=120 rtpsrc uri=rtp://239.1.2.3:1234?encoding-name=H264 ! decodebin ! videoconvert ! fakesink
     echo "${output}"
     [   -f *PAUSED_PLAYING.dot ]

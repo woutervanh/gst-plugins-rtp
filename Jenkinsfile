@@ -19,26 +19,16 @@ pipeline {
     TF_VAR_ARTIFACTORY_URL       = credentials('TF_VAR_ARTIFACTORY_URL')
     TF_VAR_ARTIFACTORY           = credentials('BARCO_USER')
     GPG_PRIVATE_EMS_KEY_SLM      = credentials('GPG_PRIVATE_EMS_SLM')
-    GPG_PUBLIC_EMS_KEY_SLM       = credentials('GPG_PUBLIC_EMS_SLM')
     GPG_PRIVATE_NIDGR            = credentials('GPG_PRIVATE_NIDGR')
-    GPG_PUBLIC_NIDGR             = credentials('GPG_PUBLIC_NIDGR')
     GPG_PRIVATE_JONSP            = credentials('GPG_PRIVATE_KEY_JONSP')
-    GPG_PUBLIC_JONSP             = credentials('GPG_PUBLIC_KEY_JONSP')
     GPG_PRIVATE_KEY_SEBBI        = credentials('GPG_PRIVATE_KEY_sebbi')
-    GPG_PUBLIC_KEY_SEBBI         = credentials('GPG_PUBLIC_KEY_sebbi')
     BIN_BARCO_COM_APIKEY         = credentials('BIN_BARCO_COM_APIKEY')
     EMS_SLACK_BASE_URL           = credentials('EMS_SLACK_BASE_URL')
     EMS_SLACK_TOKEN              = credentials('EMS_SLACK_TOKEN')
+    ISO_GPG_KEY_PATH             = credentials('EMS_ISO_GPG_PRIVATE_KEY')
   }
 
   stages {
-    stage ('Start') {
-      steps {
-        script{
-          notifyStash('STARTED')
-      	}
-     }
-    }
     stage ('env') {
       steps {
         sh 'make -f CI-Makefile env'
@@ -104,7 +94,6 @@ pipeline {
  post {
     always {
       script{
-         notifyStash(currentBuild.result)
          notifySlack2(currentBuild.result,
           "${EMS_SLACK_BASE_URL}",
           "jenkins",

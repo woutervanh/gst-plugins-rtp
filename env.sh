@@ -8,9 +8,8 @@ export SYSTEM_NAME=ems
 export SKIP_BUILD_DEPS=TRUE
 export LIST_OF_VARS_TO_REPLACE='${BLACKLISTED_PACKAGES},${LOCAL_CD},${CD_VERSION},${PACKAGES_TO_INSTALL},${SYSTEM_NAME},${BASEOS_DISTRO_REPO},${DEBIAN_DISTRO}'
 export ISO_CFG=${SYSTEM_NAME,,}-${BASEOS_DISTRO_REPO}
-export PACKAGING_SWITCHES="-g -s"
+export PACKAGING_SWITCHES="-g -s -l"
 export DO_APT_UPGRADE=
-export BARCO_PACKAGE_BUILDER=binary-docker.barco.com/eis/baseos9-package-builder:1.2.2-add-iso-signing-key-67bbc38eaa-dirty
 ################# Test Setup ####################
 export TEST_DIR=jenkins-test
 export TEST_COMPOSE_LIST="-f ./docker-compose.yml"
