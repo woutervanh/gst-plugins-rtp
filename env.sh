@@ -11,3 +11,7 @@ export ISO_CFG=${SYSTEM_NAME,,}-${BASEOS_DISTRO_REPO}
 export PACKAGING_SWITCHES="-g -s"
 export DO_APT_UPGRADE=
 export BARCO_PACKAGE_BUILDER=binary-docker.barco.com/eis/baseos9-package-builder:1.2.2-add-iso-signing-key-67bbc38eaa-dirty
+################# Test Setup ####################
+export TEST_DIR=jenkins-test
+export TEST_COMPOSE_LIST="-f ./docker-compose.yml"
+export TEST_CONTAINER=testdocker
