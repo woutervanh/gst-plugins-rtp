@@ -1,0 +1,2 @@
+option('build-gir', type: 'boolean', value: false, description: 'Whether to build a GIR file.')
+option('build-tests', type: 'boolean', value: true, description: 'Whether to build the tests')
