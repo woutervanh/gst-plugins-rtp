@@ -1,3 +1,10 @@
+gst-plugins-barcortp (1.14.0~barco9+4ubuntu1) stretch-barco-testing; urgency=medium
+
+  * move to meson build
+  * use new build-scripts
+
+ -- Slim Maalej <slim.maalej@barco.com>  Wed, 06 Jun 2018 16:58:06 +0200
+
 gst-plugins-barcortp (1.14.0~barco9+4) stretch-barco-testing; urgency=medium
 
   * README: update to reflect the status
