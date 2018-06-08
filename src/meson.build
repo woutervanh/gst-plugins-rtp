@@ -31,7 +31,7 @@ gst_barcortp = shared_library('gstbarcortp',
 )
 
 if build_gir
-  gst_barcomgs_headers = [
+  gst_barcortp_headers = [
      'gst_object_set_properties_from_uri_query_parameters.h',
      'gstbarcomgs_common.h',
      'gstrtpparameters.h',
@@ -46,8 +46,8 @@ if build_gir
       'gst_init(NULL,NULL);',
   ]
 
-  gst_barcomgs_gir = gnome.generate_gir(gst_barcomgs,
-    sources: [ gst_barcortp_sources, gst_barcomgs_headers ],
+  gst_barcortp_gir = gnome.generate_gir(gst_barcortp,
+    sources: [ gst_barcortp_sources, gst_barcortp_headers ],
     dependencies: gst_barcortp_dependencies,
     namespace: 'Gst',
     nsversion: meson.project_version(),
