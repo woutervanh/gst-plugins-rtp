@@ -611,6 +611,7 @@ gst_rtp_src_start (GstRtpSrc * self)
         "buffer-size", self->buffer_size,
         "multicast-iface", self->multicast_iface,
         "auto-multicast", FALSE,
+        "ttl-mc", self->ttl_mc,
         "close-socket", FALSE,
         NULL);
   }
