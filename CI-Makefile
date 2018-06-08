@@ -35,7 +35,7 @@ test:
 	build-scripts/test.sh
 
 lintian:
-	build-scripts/debian-package/lintian-check-debian-package.sh
+	bash -x build-scripts/debian-package/lintian-check-debian-package.sh
 
 ova:
 	@echo "MAKE ova ==========================================="
