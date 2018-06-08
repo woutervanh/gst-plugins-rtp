@@ -1,4 +1,4 @@
-gst-plugins-barcortp (1.14.0~barco9+5) stretch-barco-testing; urgency=medium
+gst-plugins-barcortp (1.14.1~barco9+1) stretch-barco-testing; urgency=medium
 
   * rtpsrc: code wrap
   * rtpsrc: set ttl-mc again during init
