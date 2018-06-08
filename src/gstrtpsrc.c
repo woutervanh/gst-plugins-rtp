@@ -596,7 +596,9 @@ gst_rtp_src_start (GstRtpSrc * self)
         "multicast-iface", self->multicast_iface,
         "close-socket", FALSE,
         "buffer-size", self->buffer_size,
-        "timeout", self->timeout, "auto-multicast", TRUE, NULL);
+        "timeout", self->timeout,
+        "auto-multicast", TRUE,
+        NULL);
 
     /* auto-multicast should be set to false as rtcp_src will already
      * join the multicast group */
