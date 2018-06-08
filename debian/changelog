@@ -3,7 +3,7 @@ gst-plugins-barcortp (1.14.1~barco9+1) stretch-barco-testing; urgency=medium
   * rtpsrc: code wrap
   * rtpsrc: set ttl-mc again during init
 
- -- Marc Leeman <marc.leeman@barco.com>  Fri, 08 Jun 2018 15:48:31 +0200
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 08 Jun 2018 16:00:37 +0200
 
 gst-plugins-barcortp (1.14.0~barco9+4) stretch-barco-testing; urgency=medium
 
