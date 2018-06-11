@@ -1,0 +1,19 @@
+version: '2'
+services:
+  testdocker:
+    build:
+      context: ${TOPDIR}
+      dockerfile: jenkins-test/Dockerfile
+      args:
+        - VERSION=${BUILD_VERSION}
+        - PACKAGE_VERSION
+        - DISTRIBUTION
+    environment:
+        - IMAGE_VERSION
+        - LOCAL_USER_ID
+    security_opt:
+        - seccomp:unconfined
+    cap_add:
+        - SYS_PTRACE
+    volumes:
+        - ${RES_DIR}:/test/reports

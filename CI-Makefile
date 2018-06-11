@@ -1,4 +1,4 @@
-export DOCKER_NAME=gstreamer1.0-plugins-barcortp
+export DOCKER_NAME=gst-plugins-barcortp
 export DEV_TEAM=ems
 export DEBIAN_TAG_PREFIX=debian/
 export RELEASE_BRANCHES=^(debian/.*)$$
@@ -35,7 +35,7 @@ test:
 	build-scripts/test.sh
 
 lintian:
-	build-scripts/debian-package/lintian-check-debian-package.sh
+	bash -x build-scripts/debian-package/lintian-check-debian-package.sh
 
 ova:
 	@echo "MAKE ova ==========================================="
