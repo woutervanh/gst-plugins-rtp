@@ -19,6 +19,7 @@ pipeline {
     TF_VAR_ARTIFACTORY_URL       = credentials('TF_VAR_ARTIFACTORY_URL')
     TF_VAR_ARTIFACTORY           = credentials('BARCO_USER')
     GPG_PRIVATE_EMS_KEY_SLM      = credentials('GPG_PRIVATE_EMS_SLM')
+    GPG_PUBLIC_EMS_KEY_SLM       = credentials('GPG_PUBLIC_EMS_SLM')
     GPG_PRIVATE_NIDGR            = credentials('GPG_PRIVATE_NIDGR')
     GPG_PRIVATE_JONSP            = credentials('GPG_PRIVATE_KEY_JONSP')
     GPG_PRIVATE_KEY_SEBBI        = credentials('GPG_PRIVATE_KEY_sebbi')
