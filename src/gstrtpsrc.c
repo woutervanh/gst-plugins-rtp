@@ -670,8 +670,9 @@ gst_rtp_src_start (GstRtpSrc * self)
   if (ret == GST_STATE_CHANGE_FAILURE){
     GST_ERROR_OBJECT (self, "Could not set RTP source to READY");
 
+    gst_element_set_locked_state (self->rtp_src, TRUE);
     gst_element_set_state (self->rtp_src, GST_STATE_NULL);
-    gst_object_unref (self->rtp_src);
+    gst_bin_remove (GST_BIN_CAST (self), self->rtp_src);
     self->rtp_src = NULL;
     // FIXME: cleanup modules
     return FALSE;
@@ -682,8 +683,9 @@ gst_rtp_src_start (GstRtpSrc * self)
     if (ret == GST_STATE_CHANGE_FAILURE){
       GST_ERROR_OBJECT (self, "Could not set RTP headerchange to READY");
 
+      gst_element_set_locked_state (self->rtpheaderchange, TRUE);
       gst_element_set_state (self->rtpheaderchange, GST_STATE_NULL);
-      gst_object_unref (self->rtpheaderchange);
+      gst_bin_remove (GST_BIN_CAST (self), self->rtpheaderchange);
       self->rtpheaderchange = NULL;
     }
   }
@@ -703,8 +705,9 @@ gst_rtp_src_start (GstRtpSrc * self)
     if (ret == GST_STATE_CHANGE_FAILURE){
       GST_ERROR_OBJECT (self, "Could not set RTCP source to READY");
 
+      gst_element_set_locked_state (self->rtcp_src, TRUE);
       gst_element_set_state (self->rtcp_src, GST_STATE_NULL);
-      gst_object_unref (self->rtcp_src);
+      gst_bin_remove (GST_BIN_CAST (self), self->rtcp_src);
       self->rtcp_src = NULL;
       return FALSE;
     }
@@ -721,8 +724,9 @@ gst_rtp_src_start (GstRtpSrc * self)
     if (ret == GST_STATE_CHANGE_FAILURE){
       GST_ERROR_OBJECT (self, "Could not set RTP sink to READY");
 
+      gst_element_set_locked_state (self->rtcp_sink, TRUE);
       gst_element_set_state (self->rtcp_sink, GST_STATE_NULL);
-      gst_object_unref (self->rtcp_sink);
+      gst_bin_remove (GST_BIN_CAST (self), self->rtcp_sink);
       self->rtcp_sink = NULL;
     }
   }
