@@ -294,7 +294,7 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
   if (GST_IS_ELEMENT(sink)){
     gst_element_set_locked_state (sink, TRUE);
     gst_element_set_state (sink, GST_STATE_NULL);
-    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_bin_remove (GST_BIN_CAST (self), sink);
 
     GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
   }
@@ -303,7 +303,7 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
   if (GST_IS_ELEMENT(sink)){
     gst_element_set_locked_state (sink, TRUE);
     gst_element_set_state (sink, GST_STATE_NULL);
-    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_bin_remove (GST_BIN_CAST (self), sink);
 
     GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
   }
@@ -312,7 +312,7 @@ gst_rtp_sink_rtpbin_pad_removed_cb (GstElement * element,
   if (GST_IS_ELEMENT(sink)){
     gst_element_set_locked_state (sink, TRUE);
     gst_element_set_state (sink, GST_STATE_NULL);
-    gst_bin_remove_many (GST_BIN_CAST (self), sink, NULL);
+    gst_bin_remove (GST_BIN_CAST (self), sink);
 
     GST_INFO_OBJECT(self, "Removed element %" GST_PTR_FORMAT, sink);
   }
@@ -662,15 +662,15 @@ gst_rtp_sink_create_udp (GstRtpSink *self, const gchar *name)
 sync_element_failure:
   gst_element_set_locked_state (rtcp_src, TRUE);
   gst_element_set_state (rtcp_src, GST_STATE_NULL);
-  gst_bin_remove_many (GST_BIN_CAST (self), rtcp_src, NULL);
+  gst_bin_remove (GST_BIN_CAST (self), rtcp_src);
 
   gst_element_set_locked_state (rtcp_sink, TRUE);
   gst_element_set_state (rtcp_sink, GST_STATE_NULL);
-  gst_bin_remove_many (GST_BIN_CAST (self), rtcp_sink, NULL);
+  gst_bin_remove (GST_BIN_CAST (self), rtcp_sink);
 
   gst_element_set_locked_state (rtp_sink, TRUE);
   gst_element_set_state (rtp_sink, GST_STATE_NULL);
-  gst_bin_remove_many (GST_BIN_CAST (self), rtp_sink, NULL);
+  gst_bin_remove (GST_BIN_CAST (self), rtp_sink);
 
   return NULL;
 }
