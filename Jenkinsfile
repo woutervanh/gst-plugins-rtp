@@ -11,7 +11,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr:'5'))
     timeout(time:1, unit: 'HOURS')
-	  timestamps()
+    timestamps()
   }
 
   environment {
@@ -24,8 +24,10 @@ pipeline {
     GPG_PRIVATE_JONSP            = credentials('GPG_PRIVATE_KEY_JONSP')
     GPG_PRIVATE_KEY_SEBBI        = credentials('GPG_PRIVATE_KEY_sebbi')
     BIN_BARCO_COM_APIKEY         = credentials('BIN_BARCO_COM_APIKEY')
-    EMS_SLACK_BASE_URL           = credentials('EMS_SLACK_BASE_URL')
-    EMS_SLACK_TOKEN              = credentials('EMS_SLACK_TOKEN')
+    EMS_SLACK_BASEURL            = credentials('EMS_SLACK_BASEURL')
+    EMS_SLACK_AUTH_TOKEN         = credentials('EMS_SLACK_AUTH_TOKEN')
+    EMS_SLACK_WORKSPACE          = credentials('EMS_SLACK_WORKSPACE')
+    EMS_SLACK_CHANNEL            = credentials('EMS_SLACK_CHANNEL')
     ISO_GPG_KEY_PATH             = credentials('EMS_ISO_GPG_PRIVATE_KEY')
   }
 
@@ -96,11 +98,11 @@ pipeline {
     always {
       script{
          notifySlack2(currentBuild.result,
-          "${EMS_SLACK_BASE_URL}",
-          "jenkins",
-          'kwaremont',
-          "${EMS_SLACK_TOKEN}",
-          "EMS_SLACK_TOKEN"
+          "${EMS_SLACK_BASEURL}",
+          "${EMS_SLACK_CHANNEL}",
+          "${EMS_SLACK_WORKSPACE}",
+          "${EMS_SLACK_AUTH_TOKEN}",
+          "EMS_SLACK_AUTH_TOKEN"
         )
       }
     }
