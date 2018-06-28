@@ -747,17 +747,6 @@ gst_rtp_src_change_state (GstElement * element, GstStateChange transition)
         goto start_failed;
       }
       break;
-    case GST_STATE_CHANGE_READY_TO_PAUSED:
-      break;
-    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-      break;
-    case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
-      break;
-    case GST_STATE_CHANGE_PAUSED_TO_READY:
-      {
-        GST_DEBUG_OBJECT (self, "Shutting down");
-      }
-      break;
     default:
       break;
   }
