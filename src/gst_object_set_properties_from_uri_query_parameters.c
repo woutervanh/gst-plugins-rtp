@@ -19,14 +19,13 @@ static gboolean
 _gst_uri_query_to_boolean (const gchar * value)
 {
   gchar *down;
-  gboolean ret=FALSE;
+  gboolean ret = FALSE;
 
   g_return_val_if_fail (value != NULL, FALSE);
 
   down = g_ascii_strdown (value, -1);
   if (g_strcmp0 (down, "true") == 0 ||
-      g_strcmp0 (down, "1") == 0 ||
-      g_strcmp0 (down, "on") == 0) {
+      g_strcmp0 (down, "1") == 0 || g_strcmp0 (down, "on") == 0) {
     ret = TRUE;
   }
   g_free (down);
@@ -43,7 +42,8 @@ _gst_uri_query_to_boolean (const gchar * value)
  *
  */
 void
-gst_object_set_properties_from_uri_query_parameters (GObject *obj, const GstUri *uri)
+gst_object_set_properties_from_uri_query_parameters (GObject * obj,
+    const GstUri * uri)
 {
   GHashTable *hash_table = gst_uri_get_query_table (uri);
   GList *keys = NULL, *key;
@@ -57,8 +57,9 @@ gst_object_set_properties_from_uri_query_parameters (GObject *obj, const GstUri 
       if (spec) {
         switch (spec->value_type) {
           case G_TYPE_BOOLEAN:
-            g_object_set (obj, key->data, _gst_uri_query_to_boolean (
-                    g_hash_table_lookup (hash_table, key->data)), NULL);
+            g_object_set (obj, key->data,
+                _gst_uri_query_to_boolean (g_hash_table_lookup (hash_table,
+                        key->data)), NULL);
             break;
           case G_TYPE_DOUBLE:
             g_object_set (obj, key->data,
@@ -115,8 +116,7 @@ gst_object_set_properties_from_uri_query_parameters (GObject *obj, const GstUri 
               }
               g_strfreev (arr);
             } else {
-              GST_WARNING(
-                  "Unknown type or not yet supported: %s "
+              GST_WARNING ("Unknown type or not yet supported: %s "
                   "(Maybe it should be added)", g_type_name (spec->value_type));
               continue;
             }
@@ -125,8 +125,7 @@ gst_object_set_properties_from_uri_query_parameters (GObject *obj, const GstUri 
         GST_LOG ("Set property %s: %s", (char *) key->data,
             (gchar *) g_hash_table_lookup (hash_table, key->data));
       } else
-        GST_LOG("Property %s not supported",
-            (char *) key->data);
+        GST_LOG ("Property %s not supported", (char *) key->data);
     }
 
     g_list_free (keys);

@@ -4,6 +4,7 @@
 #include <gst/gst.h>
 
 void
-gst_object_set_properties_from_uri_query_parameters (GObject *obj, const GstUri *uri);
+gst_object_set_properties_from_uri_query_parameters (GObject * obj,
+    const GstUri * uri);
 
 #endif

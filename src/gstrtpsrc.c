@@ -131,7 +131,8 @@ gst_rtp_src_retrieve_rtcpsrc_socket (GstRtpSrc * self)
   if (!G_IS_SOCKET (rtcpfd))
     GST_WARNING_OBJECT (self, "No valid socket retrieved from udpsrc");
   else
-    GST_DEBUG_OBJECT (self, "RTP RTCP UDP source has socket %" GST_PTR_FORMAT, rtcpfd);
+    GST_DEBUG_OBJECT (self, "RTP RTCP UDP source has socket %" GST_PTR_FORMAT,
+        rtcpfd);
 
   return rtcpfd;
 }
@@ -299,20 +300,17 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
         "mode", G_TYPE_STRING, "AAC-hbr",
         "config", G_TYPE_STRING, "1190",
         "sizelength", G_TYPE_STRING, "13", NULL);
-  }
-  else if (g_strcmp0 (encoding_name, "L16") == 0) {
+  } else if (g_strcmp0 (encoding_name, "L16") == 0) {
     gst_caps_set_simple (ret,
         "clock-rate", G_TYPE_INT, 48000,
         "encoding-name", G_TYPE_STRING, "L16", "channels", G_TYPE_INT, 2, NULL);
-  }
-  else if (g_strcmp0 (encoding_name, "MP4A-LATM") == 0) {
+  } else if (g_strcmp0 (encoding_name, "MP4A-LATM") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "audio",
         "clock-rate", G_TYPE_INT, 48000,
         "encoding-name", G_TYPE_STRING, "MP4A-LATM",
         "channels", G_TYPE_INT, 2, NULL);
-  }
-  else if (g_strcmp0 (encoding_name, "RAW-RGB24") == 0) {
+  } else if (g_strcmp0 (encoding_name, "RAW-RGB24") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "video",
         "clock-rate", G_TYPE_INT, 90000,
@@ -320,22 +318,17 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
         "sampling", G_TYPE_STRING, "RGB",
         "depth", G_TYPE_INT, 24,
         "width", G_TYPE_INT, 800, "height", G_TYPE_INT, 600, NULL);
-  }
-  else if (g_strcmp0 (encoding_name, "VP8") == 0) {
+  } else if (g_strcmp0 (encoding_name, "VP8") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "video",
         "clock-rate", G_TYPE_INT, 90000,
-        "encoding-name", G_TYPE_STRING, "VP8",
-        NULL);
-  }
-  else if (g_strcmp0 (encoding_name, "VP9") == 0) {
+        "encoding-name", G_TYPE_STRING, "VP8", NULL);
+  } else if (g_strcmp0 (encoding_name, "VP9") == 0) {
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "video",
         "clock-rate", G_TYPE_INT, 90000,
-        "encoding-name", G_TYPE_STRING, "VP9",
-        NULL);
-  }
-  else if (g_strcmp0 (encoding_name, "V2D") == 0) {
+        "encoding-name", G_TYPE_STRING, "VP9", NULL);
+  } else if (g_strcmp0 (encoding_name, "V2D") == 0) {
     /* application/x-rtp,
      * media=(string)video,
      * clock-rate=(int)90000,
@@ -358,8 +351,7 @@ gst_rtp_src_fixup_caps (GstCaps * ret, const gchar * encoding_name)
     gst_caps_set_simple (ret,
         "media", G_TYPE_STRING, "video",
         "clock-rate", G_TYPE_INT, 90000,
-        "encoding-name", G_TYPE_STRING, "V2D",
-        NULL);
+        "encoding-name", G_TYPE_STRING, "V2D", NULL);
   }
 }
 
@@ -386,8 +378,9 @@ gst_rtp_src_request_pt_map_cb (GstElement * sess, guint sess_id, guint pt,
   GST_DEBUG_OBJECT (self, "Requesting caps for pt %u in session %u", pt,
       sess_id);
 
-  if (self->caps){
-    GST_DEBUG_OBJECT(self, "Full caps were set, no need for lookup %" GST_PTR_FORMAT, self->caps);
+  if (self->caps) {
+    GST_DEBUG_OBJECT (self,
+        "Full caps were set, no need for lookup %" GST_PTR_FORMAT, self->caps);
     ret = gst_caps_copy (self->caps);
     goto full_caps_set;
   }
@@ -462,8 +455,7 @@ beach:
        * rtcp-fb-nack-pli: Packet loss indication, can serve to request
        *     a new I-Frame
        * */
-      "rtcp-fb-ccm-fir", G_TYPE_BOOLEAN, TRUE,
-      NULL);
+      "rtcp-fb-ccm-fir", G_TYPE_BOOLEAN, TRUE, NULL);
 
   gst_rtp_src_fixup_caps (ret, p->encoding_name);
   GST_DEBUG_OBJECT (self, "Decided on caps %" GST_PTR_FORMAT, ret);
@@ -482,14 +474,13 @@ full_caps_set:
  * Callback thrown when a new SSRC was detected in an RTP session
  */
 static void
-gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
-    guint sess_id,
-    guint ssrc,
-    gpointer user_data)
+gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement * object,
+    guint sess_id, guint ssrc, gpointer user_data)
 {
-  GstRtpSrc *self = GST_RTP_SRC(user_data);
+  GstRtpSrc *self = GST_RTP_SRC (user_data);
 
-  GST_INFO_OBJECT(self, "Dectected a new SSRC: session 0x%x, ssrc 0x%x.", sess_id, ssrc);
+  GST_INFO_OBJECT (self, "Dectected a new SSRC: session 0x%x, ssrc 0x%x.",
+      sess_id, ssrc);
 }
 
 /**
@@ -502,14 +493,13 @@ gst_rtp_src_rtpbin_on_new_ssrc_cb (GstElement* object,
  * Callback thrown when a collision is detected in an RTP session
  */
 static void
-gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement* object,
-    guint sess_id,
-    guint ssrc,
-    gpointer user_data)
+gst_rtp_src_rtpbin_on_ssrc_collision_cb (GstElement * object,
+    guint sess_id, guint ssrc, gpointer user_data)
 {
-  GstRtpSrc *self = GST_RTP_SRC(user_data);
+  GstRtpSrc *self = GST_RTP_SRC (user_data);
 
-  GST_WARNING_OBJECT(self, "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", sess_id, ssrc);
+  GST_WARNING_OBJECT (self,
+      "Dectected an SSRC collision: session 0x%x, ssrc 0x%x.", sess_id, ssrc);
 }
 
 /**
@@ -552,10 +542,8 @@ gst_rtp_src_start (GstRtpSrc * self)
       G_UNLIKELY (self->ssrc_change > 0)) {
     GST_LOG_OBJECT (self,
         "Inserting rtpheaderchange PT (select %u, change %u), SSRC (select %u, change %u)",
-        self->pt_select, self->pt_change, self->ssrc_select,
-        self->ssrc_change);
-    self->rtpheaderchange =
-        gst_element_factory_make ("rtpheaderchange", NULL);
+        self->pt_select, self->pt_change, self->ssrc_select, self->ssrc_change);
+    self->rtpheaderchange = gst_element_factory_make ("rtpheaderchange", NULL);
     g_return_val_if_fail (self->rtpheaderchange != NULL, FALSE);
     g_object_set (G_OBJECT (self->rtpheaderchange),
         "pt-select", self->pt_select,
@@ -565,14 +553,17 @@ gst_rtp_src_start (GstRtpSrc * self)
   }
 
   /* Set properties */
-  if (gst_rtp_src_is_multicast (gst_uri_get_host(self->uri))) {
-    GST_DEBUG_OBJECT(self, "Setting a multicast URI.");
-    uri = g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri), gst_uri_get_port(self->uri));
+  if (gst_rtp_src_is_multicast (gst_uri_get_host (self->uri))) {
+    GST_DEBUG_OBJECT (self, "Setting a multicast URI.");
+    uri =
+        g_strdup_printf ("udp://%s:%d", gst_uri_get_host (self->uri),
+        gst_uri_get_port (self->uri));
     g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
     g_free (uri);
   } else {
-    GST_DEBUG_OBJECT(self, "Setting a unicast URI.");
-    g_object_set (G_OBJECT (self->rtp_src), "port", gst_uri_get_port(self->uri), NULL);
+    GST_DEBUG_OBJECT (self, "Setting a unicast URI.");
+    g_object_set (G_OBJECT (self->rtp_src), "port",
+        gst_uri_get_port (self->uri), NULL);
   }
 
   g_object_set (G_OBJECT (self->rtp_src),
@@ -582,53 +573,44 @@ gst_rtp_src_start (GstRtpSrc * self)
       "buffer-size", self->buffer_size, "auto-multicast", TRUE, NULL);
 
   if (self->enable_rtcp) {
-    if (gst_rtp_src_is_multicast (gst_uri_get_host(self->uri))) {
+    if (gst_rtp_src_is_multicast (gst_uri_get_host (self->uri))) {
       uri =
-          g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri),
-          gst_uri_get_port(self->uri) + 1);
+          g_strdup_printf ("udp://%s:%d", gst_uri_get_host (self->uri),
+          gst_uri_get_port (self->uri) + 1);
       g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
       g_free (uri);
     } else {
       g_object_set (G_OBJECT (self->rtcp_src),
-          "port", gst_uri_get_port(self->uri) + 1, NULL);
+          "port", gst_uri_get_port (self->uri) + 1, NULL);
     }
     g_object_set (G_OBJECT (self->rtcp_src),
         "multicast-iface", self->multicast_iface,
         "close-socket", FALSE,
         "buffer-size", self->buffer_size,
-        "timeout", self->timeout,
-        "auto-multicast", TRUE,
-        NULL);
+        "timeout", self->timeout, "auto-multicast", TRUE, NULL);
 
     /* auto-multicast should be set to false as rtcp_src will already
      * join the multicast group */
 
     g_object_set (G_OBJECT (self->rtcp_sink),
-        "host", gst_uri_get_host(self->uri),
-        "port", gst_uri_get_port(self->uri) + 1,
+        "host", gst_uri_get_host (self->uri),
+        "port", gst_uri_get_port (self->uri) + 1,
         "sync", FALSE,
         "async", FALSE,
         "buffer-size", self->buffer_size,
         "multicast-iface", self->multicast_iface,
         "auto-multicast", FALSE,
-        "ttl-mc", self->ttl_mc,
-        "close-socket", FALSE,
-        NULL);
+        "ttl-mc", self->ttl_mc, "close-socket", FALSE, NULL);
   }
 
-  g_object_set (G_OBJECT (self->rtpbin),
-      "do-lost", TRUE,
-      "autoremove", TRUE,
-      "rtp-profile", 2, /* GST_RTP_PROFILE_AVPF */
-      "ignore-pt", self->pt_change,
-      "latency", self->latency,
-      NULL);
+  g_object_set (G_OBJECT (self->rtpbin), "do-lost", TRUE, "autoremove", TRUE, "rtp-profile", 2, /* GST_RTP_PROFILE_AVPF */
+      "ignore-pt", self->pt_change, "latency", self->latency, NULL);
 
   /* Add elements to the bin and link them */
   gst_bin_add_many (GST_BIN (self), self->rtp_src, self->rtpbin, NULL);
   gst_bin_add_many (GST_BIN (self), queue, NULL);
-  gst_element_link_many(self->rtp_src, queue, NULL);
-  /*lastelt = self->rtp_src;*/
+  gst_element_link_many (self->rtp_src, queue, NULL);
+  /*lastelt = self->rtp_src; */
   lastelt = queue;
 
   if (self->rtpheaderchange) {
@@ -654,8 +636,7 @@ gst_rtp_src_start (GstRtpSrc * self)
 
   if (self->enable_rtcp) {
     GST_DEBUG_OBJECT (self, "Adding elements and linking up.");
-    gst_bin_add_many (GST_BIN (self), self->rtcp_src, self->rtcp_sink,
-        NULL);
+    gst_bin_add_many (GST_BIN (self), self->rtcp_src, self->rtcp_sink, NULL);
 
     gst_element_link_pads (self->rtcp_src, "src", self->rtpbin,
         "recv_rtcp_sink_0");
@@ -663,11 +644,11 @@ gst_rtp_src_start (GstRtpSrc * self)
         self->rtcp_sink, "sink");
   }
 
-  gst_element_sync_state_with_parent(queue);
+  gst_element_sync_state_with_parent (queue);
 
   /* Sync elements states to the parent bin */
   ret = gst_element_set_state (self->rtp_src, GST_STATE_READY);
-  if (ret == GST_STATE_CHANGE_FAILURE){
+  if (ret == GST_STATE_CHANGE_FAILURE) {
     GST_ERROR_OBJECT (self, "Could not set RTP source to READY");
 
     gst_element_set_locked_state (self->rtp_src, TRUE);
@@ -678,9 +659,9 @@ gst_rtp_src_start (GstRtpSrc * self)
     return FALSE;
   }
 
-  if(self->rtpheaderchange){
+  if (self->rtpheaderchange) {
     ret = gst_element_set_state (self->rtpheaderchange, GST_STATE_READY);
-    if (ret == GST_STATE_CHANGE_FAILURE){
+    if (ret == GST_STATE_CHANGE_FAILURE) {
       GST_ERROR_OBJECT (self, "Could not set RTP headerchange to READY");
 
       gst_element_set_locked_state (self->rtpheaderchange, TRUE);
@@ -691,7 +672,7 @@ gst_rtp_src_start (GstRtpSrc * self)
   }
 
   ret = gst_element_set_state (self->rtpbin, GST_STATE_READY);
-  if (ret == GST_STATE_CHANGE_FAILURE){
+  if (ret == GST_STATE_CHANGE_FAILURE) {
     GST_ERROR_OBJECT (self, "Could not set RTP bin to READY");
   }
 
@@ -702,7 +683,7 @@ gst_rtp_src_start (GstRtpSrc * self)
     /* First we update the state of rtcp_src so that it creates a socket */
 
     ret = gst_element_set_state (self->rtcp_src, GST_STATE_READY);
-    if (ret == GST_STATE_CHANGE_FAILURE){
+    if (ret == GST_STATE_CHANGE_FAILURE) {
       GST_ERROR_OBJECT (self, "Could not set RTCP source to READY");
 
       gst_element_set_locked_state (self->rtcp_src, TRUE);
@@ -716,12 +697,10 @@ gst_rtp_src_start (GstRtpSrc * self)
     rtcpfd = gst_rtp_src_retrieve_rtcpsrc_socket (self);
     g_return_val_if_fail (rtcpfd != NULL, FALSE);
     g_object_set (G_OBJECT (self->rtcp_sink),
-        "socket", rtcpfd,
-        "ttl-mc", self->ttl_mc,
-        NULL);
+        "socket", rtcpfd, "ttl-mc", self->ttl_mc, NULL);
 
     ret = gst_element_set_state (self->rtcp_sink, GST_STATE_READY);
-    if (ret == GST_STATE_CHANGE_FAILURE){
+    if (ret == GST_STATE_CHANGE_FAILURE) {
       GST_ERROR_OBJECT (self, "Could not set RTP sink to READY");
 
       gst_element_set_locked_state (self->rtcp_sink, TRUE);
@@ -853,22 +832,25 @@ gst_rtp_src_set_property (GObject * object, guint prop_id,
         gst_uri_unref (self->uri);
       self->uri = gst_uri_from_string (g_value_get_string (value));
 
-      gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self), self->uri);
+      gst_object_set_properties_from_uri_query_parameters (G_OBJECT (self),
+          self->uri);
       if (self->rtp_src) {
-        uri = g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri), gst_uri_get_port(self->uri));
+        uri =
+            g_strdup_printf ("udp://%s:%d", gst_uri_get_host (self->uri),
+            gst_uri_get_port (self->uri));
         g_object_set (G_OBJECT (self->rtp_src), "uri", uri, NULL);
         g_free (uri);
       }
       if (self->enable_rtcp && self->rtcp_src) {
-        if (gst_rtp_src_is_multicast (gst_uri_get_host(self->uri))) {
+        if (gst_rtp_src_is_multicast (gst_uri_get_host (self->uri))) {
           uri =
-              g_strdup_printf ("udp://%s:%d", gst_uri_get_host(self->uri),
-              gst_uri_get_port(self->uri) + 1);
+              g_strdup_printf ("udp://%s:%d", gst_uri_get_host (self->uri),
+              gst_uri_get_port (self->uri) + 1);
           g_object_set (G_OBJECT (self->rtcp_src), "uri", uri, NULL);
           g_free (uri);
         } else {
           g_object_set (G_OBJECT (self->rtcp_src),
-              "port", gst_uri_get_port(self->uri) + 1, NULL);
+              "port", gst_uri_get_port (self->uri) + 1, NULL);
         }
         g_object_set (G_OBJECT (self->rtcp_src), "closefd", FALSE, NULL);
       }
@@ -1044,8 +1026,11 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
    *
    * Since: 0.10.5
    */
-  g_object_class_install_property (oclass, PROP_URI,
-      g_param_spec_string ("uri", "URI", "URI to save",
+  g_object_class_install_property (oclass,
+      PROP_URI,
+      g_param_spec_string ("uri",
+          "URI",
+          "URI to save",
           DEFAULT_PROP_URI, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
@@ -1072,7 +1057,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
   g_object_class_install_property (oclass, PROP_LATENCY,
       g_param_spec_uint ("latency", "Buffer latency in ms",
           "Default amount of ms to buffer in the jitterbuffers", 0, G_MAXUINT,
-          DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
+          DEFAULT_LATENCY_MS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::enable-rtcp
@@ -1084,7 +1069,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
   g_object_class_install_property (oclass, PROP_ENABLE_RTCP,
       g_param_spec_boolean ("enable-rtcp", "Enable RTCP",
           "Enable RTCP feedback in RTP", DEFAULT_ENABLE_RTCP,
-          G_PARAM_READWRITE));
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::multicast-iface
@@ -1109,7 +1094,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
   g_object_class_install_property (oclass, PROP_BUFFER_SIZE,
       g_param_spec_uint ("buffer-size", "Kernel receive buffer size",
           "Size of the kernel receive buffer in bytes, 0=default", 0, G_MAXUINT,
-          DEFAULT_LATENCY_MS, G_PARAM_READWRITE));
+          DEFAULT_LATENCY_MS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::timeout
@@ -1138,7 +1123,8 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "Payload type with which to overwrite a previous value (0 = disabled)",
           GST_RTPPTCHANGE_MIN_PT_NUMBER,
           GST_RTPPTCHANGE_MAX_PT_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_PT_NUMBER, G_PARAM_READWRITE));
+          GST_RTPPTCHANGE_DEFAULT_PT_NUMBER,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::pt-select
@@ -1154,7 +1140,8 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "Payload type to select, others are dropped (0 = disabled)",
           GST_RTPPTCHANGE_MIN_PT_NUMBER,
           GST_RTPPTCHANGE_MAX_PT_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_PT_SELECT, G_PARAM_READWRITE));
+          GST_RTPPTCHANGE_DEFAULT_PT_SELECT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::ssrc-change
@@ -1170,7 +1157,8 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "Payload type with which to overwrite a previous value (0 = disabled)",
           GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
           GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_SSRC_NUMBER, G_PARAM_READWRITE));
+          GST_RTPPTCHANGE_DEFAULT_SSRC_NUMBER,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::ssrc-select
@@ -1186,7 +1174,8 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "Payload type to select, others are dropped (0 = disabled)",
           GST_RTPPTCHANGE_MIN_SSRC_NUMBER,
           GST_RTPPTCHANGE_MAX_SSRC_NUMBER,
-          GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT, G_PARAM_READWRITE));
+          GST_RTPPTCHANGE_DEFAULT_SSRC_SELECT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSrc::caps
@@ -1221,8 +1210,7 @@ gst_rtp_src_class_init (GstRtpSrcClass * klass)
           "Time-to-live for multicast RTCP Receiver Reports",
           "Time-to-live for multicast RTCP Receiver Reports",
           DEFAULT_PROP_TTL_MC,
-          64,
-          DEFAULT_PROP_TTL_MC, G_PARAM_READWRITE));
+          64, DEFAULT_PROP_TTL_MC, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
 
   gst_element_class_add_pad_template (gstelement_class,

@@ -41,6 +41,6 @@
     gst_iterator_free(it); \
   }
 
-gboolean gst_barco_is_ipv4(GstUri *uri);
+gboolean gst_barco_is_ipv4 (GstUri * uri);
 
 #endif

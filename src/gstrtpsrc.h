@@ -5,7 +5,6 @@
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_RTP_SRC (gst_rtp_src_get_type ())
 G_DECLARE_FINAL_TYPE (GstRtpSrc, gst_rtp_src, GST, RTP_SRC, GstBin);
 

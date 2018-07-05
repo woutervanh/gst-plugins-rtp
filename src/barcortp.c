@@ -48,8 +48,4 @@ GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
     barcortp,
     "Barco RTP Plugins",
-    plugin_init,
-    VERSION,
-    "LGPL",
-    "Barco RTP Plugins",
-    "http://www.barco.com/");
+    plugin_init, VERSION, "LGPL", "Barco RTP Plugins", "http://www.barco.com/");

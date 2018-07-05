@@ -5,7 +5,6 @@
 #include <gio/gio.h>
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_RTP_SINK             (gst_rtp_sink_get_type ())
 G_DECLARE_FINAL_TYPE (GstRtpSink, gst_rtp_sink, GST, RTP_SINK, GstBin);
 
