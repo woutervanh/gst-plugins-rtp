@@ -1,3 +1,15 @@
+gst-plugins-barcortp (1.14.1~barco9+3) stretch-barco-testing; urgency=medium
+
+  [ Niels De Graef ]
+  * Jenkins: update slack workspace.
+
+  [ Marc Leeman ]
+  * rtpsrc: improve logging sock/sockets
+  * rtpsrc: simplify state_change
+  * all: gst-indent
+
+ -- Marc Leeman <marc.leeman@barco.com>  Thu, 05 Jul 2018 16:40:37 +0200
+
 gst-plugins-barcortp (1.14.1~barco9+2) stretch-barco-testing; urgency=medium
 
   [ Marc Leeman ]
