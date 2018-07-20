@@ -1,3 +1,13 @@
+gst-plugins-barcortp (1.14.1~barco9+4) stretch-barco-testing; urgency=medium
+
+  * rtpsink: add bind-port and bind-address for outgoing data connections
+  * tests: test uri rtpsink/rtpsrc
+  * ./src/gstrtpsink.c: style mismatch
+  * ./tests/rtpsrc.c: style mismatch
+  * ./tests/rtpsink.c: style mismatch
+
+ -- Marc Leeman <marc.leeman@barco.com>  Fri, 20 Jul 2018 13:59:56 +0200
+
 gst-plugins-barcortp (1.14.1~barco9+3) stretch-barco-testing; urgency=medium
 
   [ Niels De Graef ]
