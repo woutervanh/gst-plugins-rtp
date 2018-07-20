@@ -6,7 +6,8 @@
 GST_START_TEST (test_uri_to_properties)
 {
   GstElement *rtpsrc;
-  guint buffer_size, latency, pt_change, pt_select, ssrc_change, ssrc_select, ttl_mc;
+  guint buffer_size, latency, pt_change, pt_select, ssrc_change, ssrc_select,
+      ttl_mc;
   guint64 timeout;
   gchar *caps, *encoding_name, multicast_iface;
   gboolean enable_rtcp;
@@ -23,10 +24,7 @@ GST_START_TEST (test_uri_to_properties)
       "&pt-change=96"
       "&pt-select=98"
       "&ssrc-change=123456"
-      "&ssrc-select=654321"
-      "&timeout=10000"
-      "&ttl-mc=9",
-      NULL);
+      "&ssrc-select=654321" "&timeout=10000" "&ttl-mc=9", NULL);
 
   g_object_get (rtpsrc,
       "buffer-size", &buffer_size,
@@ -37,9 +35,7 @@ GST_START_TEST (test_uri_to_properties)
       "pt-select", &pt_select,
       "ssrc-change", &ssrc_change,
       "ssrc-select", &ssrc_select,
-      "timeout", &timeout,
-      "ttl-mc", &ttl_mc,
-      NULL);
+      "timeout", &timeout, "ttl-mc", &ttl_mc, NULL);
 
   /* Make sure these values are in sync with the one from the URI. */
   g_assert_cmpuint (buffer_size, ==, 8192);
@@ -48,11 +44,12 @@ GST_START_TEST (test_uri_to_properties)
   g_assert_cmpuint (pt_select, ==, 98);
   g_assert_cmpuint (ssrc_change, ==, 123456);
   g_assert_cmpuint (ssrc_select, ==, 654321);
-  g_assert_cmpuint (timeout , ==, 10000);
-  g_assert_cmpint (ttl_mc , ==, 9);
+  g_assert_cmpuint (timeout, ==, 10000);
+  g_assert_cmpint (ttl_mc, ==, 9);
 
   gst_object_unref (rtpsrc);
 }
+
 GST_END_TEST;
 
 GST_START_TEST (test_pads)
