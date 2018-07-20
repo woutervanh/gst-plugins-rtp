@@ -16,42 +16,33 @@ GST_START_TEST (test_uri_to_properties)
   /* Sets properties to non-default values (make sure this stays in sync) */
   g_object_set (rtpsink, "uri", "rtp://1.230.1.2?"
       "cidr=24"
-      "&bind-address=1.2.3.4"
-      "&bind-port=5678"
-      "&ttl=8"
-      "&ttl-mc=9",
-      NULL);
+      "&bind-address=1.2.3.4" "&bind-port=5678" "&ttl=8" "&ttl-mc=9", NULL);
 
   g_object_get (rtpsink,
       "cidr", &cidr,
       "bind_port", &bind_port,
       "ttl", &ttl,
       "ttl_mc", &ttl_mc,
-      "bind-address", &bind_address,
-      "src-port", &src_port,
-      NULL);
+      "bind-address", &bind_address, "src-port", &src_port, NULL);
 
   /* Make sure these values are in sync with the one from the URI. */
-  g_assert_cmpint (ttl , ==, 8);
-  g_assert_cmpint (ttl_mc , ==, 9);
-  g_assert_cmpuint (cidr , ==, 24);
+  g_assert_cmpint (ttl, ==, 8);
+  g_assert_cmpint (ttl_mc, ==, 9);
+  g_assert_cmpuint (cidr, ==, 24);
   g_assert_cmpuint (bind_port, ==, 5678);
   g_assert_cmpuint (src_port, ==, 5678);
   g_assert_cmpstr (bind_address, ==, "1.2.3.4");
 
-  g_object_set (rtpsink, "src-port", 1234,
-      NULL);
+  g_object_set (rtpsink, "src-port", 1234, NULL);
 
-  g_object_get (rtpsink,
-      "src-port", &src_port,
-      "bind-port", &bind_port,
-      NULL);
+  g_object_get (rtpsink, "src-port", &src_port, "bind-port", &bind_port, NULL);
 
   g_assert_cmpuint (src_port, ==, 1234);
   g_assert_cmpuint (bind_port, ==, 1234);
 
   gst_object_unref (rtpsink);
 }
+
 GST_END_TEST;
 
 GST_START_TEST (test_pads)
@@ -118,9 +109,9 @@ rtpsink_suite (void)
   suite_add_tcase (s, tc_chain);
   tcase_add_test (tc_chain, test_uri_to_properties);
 
-  /*tcase_add_test (tc_chain, test_pads);*/
-  /*tcase_add_test (tc_chain, test_pads_localhost);*/
-  /*tcase_add_test (tc_chain, test_pads_localhost_3_slashes);*/
+  /*tcase_add_test (tc_chain, test_pads); */
+  /*tcase_add_test (tc_chain, test_pads_localhost); */
+  /*tcase_add_test (tc_chain, test_pads_localhost_3_slashes); */
 
   return s;
 }
