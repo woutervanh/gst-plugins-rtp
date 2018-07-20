@@ -788,7 +788,7 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
       self->ttl_mc = g_value_get_int (value);
       break;
     case PROP_BIND_ADDRESS:
-      g_free(self->bind_address);
+      g_free (self->bind_address);
       self->bind_address = g_value_dup_string (value);
       break;
     case PROP_SRC_PORT:
@@ -927,8 +927,8 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
    */
   g_object_class_install_property (oclass, PROP_BIND_ADDRESS,
       g_param_spec_string ("bind-address", "Bind Address",
-        "Address to bind the socket to", DEFAULT_BIND_ADDRESS,
-        G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+          "Address to bind the socket to", DEFAULT_BIND_ADDRESS,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
    * GstRtpSink::bind-port
