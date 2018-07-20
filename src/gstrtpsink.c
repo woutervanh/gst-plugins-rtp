@@ -41,7 +41,8 @@ struct _GstRtpSink
   gint ttl;
   gint ttl_mc;
   gint pt;
-  gint src_port;
+  gchar *bind_address;
+  gint bind_port;
 
   GstElement *rtpbin;
 
@@ -54,6 +55,8 @@ enum
   PROP_CIDR,
   PROP_NPADS,
   PROP_SRC_PORT,
+  PROP_BIND_ADDRESS,
+  PROP_BIND_PORT,
   PROP_TTL,
   PROP_TTL_MC,
   PROP_URI,
@@ -65,7 +68,8 @@ enum
 #define DEFAULT_PROP_CIDR             (32)
 #define DEFAULT_PROP_TTL              (64)
 #define DEFAULT_PROP_TTL_MC           (8)
-#define DEFAULT_SRC_PORT              (0)
+#define DEFAULT_BIND_ADDRESS          (NULL)
+#define DEFAULT_BIND_PORT             (0)
 
 static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink_%u",
     GST_PAD_SINK,
@@ -531,6 +535,8 @@ gst_rtp_sink_create_udp (GstRtpSink * self, const gchar * name)
       "async", FALSE,
       "ttl", self->ttl,
       "ttl-mc", self->ttl_mc,
+      "bind-address", self->bind_address,
+      "bind-port", self->bind_port,
       "host", host,
       "port", gst_uri_get_port (uri), "auto-multicast", TRUE, NULL);
 
@@ -781,8 +787,13 @@ gst_rtp_sink_set_property (GObject * object, guint prop_id,
     case PROP_TTL_MC:
       self->ttl_mc = g_value_get_int (value);
       break;
+    case PROP_BIND_ADDRESS:
+      g_free(self->bind_address);
+      self->bind_address = g_value_dup_string (value);
+      break;
     case PROP_SRC_PORT:
-      self->src_port = g_value_get_int (value);
+    case PROP_BIND_PORT:
+      self->bind_port = g_value_get_int (value);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -812,8 +823,12 @@ gst_rtp_sink_get_property (GObject * object, guint prop_id,
     case PROP_TTL_MC:
       g_value_set_int (value, self->ttl_mc);
       break;
+    case PROP_BIND_ADDRESS:
+      g_value_set_string (value, self->bind_address);
+      break;
     case PROP_SRC_PORT:
-      g_value_set_int (value, self->src_port);
+    case PROP_BIND_PORT:
+      g_value_set_int (value, self->bind_port);
       break;
     case PROP_NPADS:
       g_value_set_uint (value, self->npads);
@@ -831,6 +846,9 @@ gst_rtp_sink_finalize (GObject * gobject)
 
   if (self->uri)
     gst_uri_unref (self->uri);
+
+  g_free (self->bind_address);
+  self->bind_address = NULL;
 
   g_mutex_clear (&self->lock);
   G_OBJECT_CLASS (parent_class)->finalize (gobject);
@@ -896,8 +914,32 @@ gst_rtp_sink_class_init (GstRtpSinkClass * klass)
    */
   g_object_class_install_property (oclass, PROP_SRC_PORT,
       g_param_spec_int ("src-port", "src-port", "The sender source port"
-          " (0 = dynamic)",
-          0, 65535, DEFAULT_SRC_PORT,
+          " (deprecated, use bind-port)",
+          0, 65535, DEFAULT_BIND_PORT,
+          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink::bind-address
+   *
+   * Address to bind the socket to
+   *
+   * Since: 1.14.1
+   */
+  g_object_class_install_property (oclass, PROP_BIND_ADDRESS,
+      g_param_spec_string ("bind-address", "Bind Address",
+        "Address to bind the socket to", DEFAULT_BIND_ADDRESS,
+        G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  /**
+   * GstRtpSink::bind-port
+   *
+   * Set source port for sending data (default random)
+   *
+   * Since: 1.14.1
+   */
+  g_object_class_install_property (oclass, PROP_BIND_PORT,
+      g_param_spec_int ("bind-port", "bind-port", "Port to bind the socket to",
+          0, 65535, DEFAULT_BIND_PORT,
           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   /**
@@ -956,7 +998,8 @@ gst_rtp_sink_init (GstRtpSink * self)
   self->cidr = DEFAULT_PROP_CIDR;
   self->ttl = DEFAULT_PROP_TTL;
   self->ttl_mc = DEFAULT_PROP_TTL_MC;
-  self->src_port = DEFAULT_SRC_PORT;
+  self->bind_address = DEFAULT_BIND_ADDRESS;
+  self->bind_port = DEFAULT_BIND_PORT;
   g_mutex_init (&self->lock);
 
   {
