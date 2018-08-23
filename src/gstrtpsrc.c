@@ -243,14 +243,14 @@ gst_rtp_src_rtpbin_pad_added_cb (GstElement * element,
   }
 
   if (G_UNLIKELY (self->pt_change)) {
-    GstCaps *caps = gst_rtp_src_request_pt_map_cb (NULL, 0, 96, self);
+    GstCaps *pt_caps = gst_rtp_src_request_pt_map_cb (NULL, 0, 96, self);
     GstElement *filter = gst_element_factory_make ("capsfilter", NULL);
     GstPad *sinkpad;
 
-    GST_DEBUG_OBJECT (self,
-        "PT ignored, need to set caps to caps %" GST_PTR_FORMAT, caps);
-    g_object_set (G_OBJECT (filter), "caps", caps, NULL);
-    gst_caps_unref (caps);
+    GST_DEBUG_OBJECT (self, "PT ignored, need to set caps to %" GST_PTR_FORMAT,
+        pt_caps);
+    g_object_set (G_OBJECT (filter), "caps", pt_caps, NULL);
+    gst_caps_unref (pt_caps);
 
     gst_bin_add (GST_BIN (self), filter);
     gst_element_sync_state_with_parent (filter);
