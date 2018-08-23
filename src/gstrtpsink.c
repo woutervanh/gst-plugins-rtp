@@ -202,9 +202,9 @@ gst_rtp_sink_release_pad (GstElement * element, GstPad * pad)
  */
 static void
 gst_rtp_sink_rtpbin_pad_added_cb (GstElement * element,
-    GstPad * pad, gpointer data)
+    GstPad * pad, gpointer user_data)
 {
-  GstRtpSink *self = GST_RTP_SINK (data);
+  GstRtpSink *self = GST_RTP_SINK (user_data);
   GstPad *target;
   GstCaps *caps;
 
