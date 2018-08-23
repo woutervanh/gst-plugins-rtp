@@ -19,7 +19,6 @@ pipeline {
     TF_VAR_ARTIFACTORY_URL       = credentials('TF_VAR_ARTIFACTORY_URL')
     TF_VAR_ARTIFACTORY           = credentials('BARCO_USER')
     GPG_PRIVATE_EMS_KEY_SLM      = credentials('GPG_PRIVATE_EMS_SLM')
-    GPG_PUBLIC_EMS_KEY_SLM       = credentials('GPG_PUBLIC_EMS_SLM')
     GPG_PRIVATE_NIDGR            = credentials('GPG_PRIVATE_NIDGR')
     GPG_PRIVATE_JONSP            = credentials('GPG_PRIVATE_KEY_JONSP')
     GPG_PRIVATE_KEY_SEBBI        = credentials('GPG_PRIVATE_KEY_sebbi')
@@ -34,6 +33,9 @@ pipeline {
   stages {
     stage ('env') {
       steps {
+        script {
+         notifyStash('STARTED')
+        }
         sh 'make -f CI-Makefile env'
       }
     }
@@ -58,35 +60,6 @@ pipeline {
           }
     }
 
-    stage ('iso') {
-      when {
-          anyOf {
-            branch "debian/*";
-            branch "master";
-            changeRequest target : 'master'
-          }
-      }
-      steps {
-        sh 'make -f CI-Makefile iso'
-        stash includes: 'results/iso/barco*.iso', name: 'iso'
-      }
-    }
-
-    stage ('ova') {
-      when {
-          anyOf {
-            branch "debian/*";
-            branch "master";
-            changeRequest target : 'master'
-          }
-      }
-      agent { label "ova-generator" }
-      steps {
-        unstash 'iso'
-        sh 'make -f CI-Makefile ova'
-      }
-    }
-
     stage ('publish'){
       when { branch "debian/*"   }
       steps {
@@ -97,6 +70,7 @@ pipeline {
  post {
     always {
       script{
+         notifyStash(currentBuild.result)
          notifySlack2(currentBuild.result,
           "${EMS_SLACK_BASEURL}",
           "${EMS_SLACK_CHANNEL}",
