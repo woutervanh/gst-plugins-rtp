@@ -72,7 +72,6 @@ global_c_args = [
   '-Waddress',
   '-Waggregate-return',
   '-Wall',
-  '-Wdeclaration-after-statement',
   '-Wformat',
   '-Winit-self',
   '-Wmissing-declarations',
@@ -87,7 +86,24 @@ global_c_args = [
   '-Wvla',
   '-Wwrite-strings',
    # Errors
+  '-Werror=address',
+  '-Werror=array-bounds',
+  '-Werror=declaration-after-statement',
   '-Werror=format-security',
+  '-Werror=implicit',
+  '-Werror=init-self',
+  '-Werror=int-conversion',
+  '-Werror=int-to-pointer-cast',
+  '-Werror=old-style-definition',
+  '-Werror=main',
+  '-Werror=missing-prototypes',
+  '-Werror=nested-externs',
+  '-Werror=pointer-arith',
+  '-Werror=pointer-to-int-cast',
+  '-Werror=return-type',
+  '-Werror=shadow',
+  '-Werror=strict-prototypes',
+  '-Werror=switch-default',
 ]
 
 if buildtype != 'debug'
