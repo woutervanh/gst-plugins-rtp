@@ -59,45 +59,49 @@ global_c_args = [
   '-include', 'config.h',
   # General
   '-std=gnu99',
-  '-D_FORTIFY_SOURCE=2',
-  '-DGST_USE_UNSTABLE_API',
-  '-DG_THREADS_MANDATORY',
-  '-DG_DISABLE_CAST_CHECKS',
-  '-DG_DISABLE_ASSERT',
-  '-Wall',
-  '-Wdeclaration-after-statement',
-  '-Wvla',
-  '-Wpointer-arith',
-  '-Wmissing-declarations',
-  '-Wmissing-prototypes',
-  '-Wredundant-decls',
-  '-Wwrite-strings',
-  '-Wold-style-definition',
-  '-Waggregate-return',
-  '-Winit-self',
-  '-Wmissing-include-dirs',
-  '-Waddress',
-  '-Wno-multichar',
-  '-Wnested-externs',
-  '-DGST_DISABLE_DEPRECATED',
   '-fstack-protector',
   '--param=ssp-buffer-size=4',
-  '-Wformat',
-  '-Werror=format-security',
-  '-Wno-error',
+  # Defines
   '-DDISABLE_DEPRECATED',
+  '-DGST_DISABLE_DEPRECATED',
   '-DGST_USE_UNSTABLE_API',
-  '-DHAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS'
+  '-DGST_USE_UNSTABLE_API',
+  '-DG_THREADS_MANDATORY',
+  '-DHAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS',
+   # Warnings
+  '-Waddress',
+  '-Waggregate-return',
+  '-Wall',
+  '-Wdeclaration-after-statement',
+  '-Wformat',
+  '-Winit-self',
+  '-Wmissing-declarations',
+  '-Wmissing-include-dirs',
+  '-Wmissing-prototypes',
+  '-Wnested-externs',
+  '-Wno-error',
+  '-Wno-multichar',
+  '-Wold-style-definition',
+  '-Wpointer-arith',
+  '-Wredundant-decls',
+  '-Wvla',
+  '-Wwrite-strings',
+   # Errors
+  '-Werror=format-security',
 ]
 
 if buildtype != 'debug'
   global_c_args += [
-    '-O2'
+    '-O2',
+    '-DG_DISABLE_CAST_CHECKS',
+    '-DG_DISABLE_ASSERT',
+    # Requires optimizations
+    '-D_FORTIFY_SOURCE=2',
   ]
 else
   global_c_args += [
     '-O0',
-    '-g'
+    '-g',
   ]
 endif
 
