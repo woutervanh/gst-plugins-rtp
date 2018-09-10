@@ -31,13 +31,16 @@ include_default = '''
 #include <gst/gst.h>
 '''
 
-if not cc.has_function(
+if cc.has_function(
             'gst_object_set_properties_from_uri_query_parameters',
             prefix: include_default,
             dependencies: gst_barcortp_dependencies,
             include_directories: config_h_dir)
+  define_c_flags = '-DHAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS'
+else
   gst_barcortp_sources += 'gst_object_set_properties_from_uri_query_parameters.c'
   gst_barcortp_headers += 'gst_object_set_properties_from_uri_query_parameters.h'
+  define_c_flags = ''
 endif
 
 gst_barcortp = shared_library('gstbarcortp',
@@ -46,6 +49,7 @@ gst_barcortp = shared_library('gstbarcortp',
   dependencies: gst_barcortp_dependencies,
   include_directories: config_h_dir,
   install: true,
+  c_args: define_c_flags,
   install_dir: join_paths(get_option('prefix'), get_option('libdir'), 'gstreamer-1.0'),
 )
 

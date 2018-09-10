@@ -67,7 +67,6 @@ global_c_args = [
   '-DGST_USE_UNSTABLE_API',
   '-DGST_USE_UNSTABLE_API',
   '-DG_THREADS_MANDATORY',
-  '-DHAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS',
    # Warnings
   '-Waddress',
   '-Waggregate-return',
