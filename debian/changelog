@@ -1,3 +1,20 @@
+gst-plugins-barcortp (1.14.1~barco9+5) stretch-barco-testing; urgency=medium
+
+  [ Slim Maalej ]
+  * fix missing key in jenkinsfile remove iso ova steps
+
+  [ Niels De Graef ]
+  * meson: cleanup gcc arguments.
+  * meson: turn some warnings into errors.
+  * rtpsink: don't shadow variables.
+  * rtpsrc: don't shadow variables.
+
+  [ Marc Leeman ]
+  * meson: detect patched gsturi.h
+  * meson: do not set the global HAVE_GST_OBJECT_SET_PROPERTIES_FROM_URI_QUERY_PARAMETERS
+
+ -- Marc Leeman <marc.leeman@barco.com>  Mon, 10 Sep 2018 10:45:59 +0200
+
 gst-plugins-barcortp (1.14.1~barco9+4) stretch-barco-testing; urgency=medium
 
   * rtpsink: add bind-port and bind-address for outgoing data connections
