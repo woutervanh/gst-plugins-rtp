@@ -6,6 +6,12 @@ gst_barcortp_sources = [
   'gstrtpsrc.c'
 ]
 
+gst_barcortp_headers = [
+   'gstbarcomgs_common.h',
+   'gstrtpparameters.h',
+   'gstrtpsink.h'
+]
+
 gst_barcortp_dependencies = [
   libmath,
   gstreamer,
@@ -21,6 +27,19 @@ gst_barcortp_dependencies = [
   gstreamer_sdp
 ]
 
+include_default = '''
+#include <gst/gst.h>
+'''
+
+if not cc.has_function(
+            'gst_object_set_properties_from_uri_query_parameters',
+            prefix: include_default,
+            dependencies: gst_barcortp_dependencies,
+            include_directories: config_h_dir)
+  gst_barcortp_sources += 'gst_object_set_properties_from_uri_query_parameters.c'
+  gst_barcortp_headers += 'gst_object_set_properties_from_uri_query_parameters.h'
+endif
+
 gst_barcortp = shared_library('gstbarcortp',
   gst_barcortp_sources,
   version: pkg_version,
@@ -31,12 +50,6 @@ gst_barcortp = shared_library('gstbarcortp',
 )
 
 if build_gir
-  gst_barcortp_headers = [
-     'gst_object_set_properties_from_uri_query_parameters.h',
-     'gstbarcomgs_common.h',
-     'gstrtpparameters.h',
-     'gstrtpsink.h'
-  ]
 
   gir_init_section = [
     '--add-init-section=extern void gst_init(gint*,gchar**);' + \
