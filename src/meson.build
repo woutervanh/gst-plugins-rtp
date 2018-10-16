@@ -45,7 +45,6 @@ endif
 
 gst_barcortp = shared_library('gstbarcortp',
   gst_barcortp_sources,
-  version: pkg_version,
   dependencies: gst_barcortp_dependencies,
   include_directories: config_h_dir,
   install: true,
