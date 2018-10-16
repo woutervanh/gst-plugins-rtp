@@ -40,7 +40,7 @@ if cc.has_function(
 else
   gst_barcortp_sources += 'gst_object_set_properties_from_uri_query_parameters.c'
   gst_barcortp_headers += 'gst_object_set_properties_from_uri_query_parameters.h'
-  define_c_flags = ''
+  define_c_flags = []
 endif
 
 gst_barcortp = shared_library('gstbarcortp',
